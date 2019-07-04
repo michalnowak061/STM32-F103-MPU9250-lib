@@ -50,6 +50,14 @@
 
 /* USER CODE BEGIN PV */
 
+struct MPU9250 mpu1;
+
+int MPU9250_status = 0;
+
+int16_t Acce_X_global = 0, Acce_Y_global = 0, Acce_Z_global = 0;
+int16_t Gyro_X_global = 0, Gyro_Y_global = 0, Gyro_Z_global = 0;
+int16_t Mag_X_global = 0, Mag_Y_global = 0, Mag_Z_global = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -96,13 +104,13 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  struct MPU9250 mpu1;
-  int MPU9250_status = 0;
-
-  if( MPU9250_Init(&hi2c1, &mpu1, MPU9250_Device_1) == MPU9250_Init_OK) {
+  if( MPU9250_Init(&hi2c1, &mpu1, MPU9250_Device_1, MPU9250_Acce_2G, MPU9250_Gyro_2000s) == MPU9250_Init_OK) {
 
 	  MPU9250_status = 1;
   }
+
+  HAL_Delay(1000);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -112,9 +120,17 @@ int main(void)
 
 	  if( MPU9250_status ) {
 
-		  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-		  HAL_Delay(500);
+		  MPU9250_Read_Accelerometer(&hi2c1, &mpu1);
+		  MPU9250_Read_Gyroscope(&hi2c1, &mpu1);
+		  MPU9250_Read_Magnetometer(&hi2c1, &mpu1);
+
+		  //HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+		  //HAL_Delay(500);
 	  }
+
+	  Acce_X_global = mpu1.Accelerometer_X; Acce_Y_global = mpu1.Accelerometer_Y; Acce_Z_global = mpu1.Accelerometer_Z;
+	  Gyro_X_global = mpu1.Gyroscope_X;     Gyro_Y_global = mpu1.Gyroscope_Y;     Gyro_Z_global = mpu1.Gyroscope_Z;
+	  Mag_X_global  = mpu1.Magnetometer_X;  Mag_Y_global  = mpu1.Magnetometer_Y;  Mag_Z_global  = mpu1.Magnetometer_Z;
 
     /* USER CODE END WHILE */
 
