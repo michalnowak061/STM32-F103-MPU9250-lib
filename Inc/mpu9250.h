@@ -9,6 +9,7 @@
 #define MPU9250_H_
 
 #include "i2c.h"
+#include "math.h"
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
@@ -113,25 +114,26 @@
 #define MPU9250_ZA_OFFSET_H			0x7D
 #define MPU9250_ZA_OFFSET_L			0x7E
 
-#define MPU9250_WIA					0x00
-#define MPU9250_INFO				0x01
-#define MPU9250_ST1					0x02
-#define MPU9250_HXL					0x03
-#define MPU9250_HXH					0x04
-#define MPU9250_HYL					0x05
-#define MPU9250_HYH					0x06
-#define MPU9250_HZL					0x07
-#define MPU9250_HZH					0x08
-#define MPU9250_ST2					0x09
-#define MPU9250_CNTL				0x0A
-#define MPU9250_RSV					0x0B
-#define MPU9250_ASTC				0x0C
-#define MPU9250_TS1					0x0D
-#define MPU9250_TS2					0x0E
-#define MPU9250_I2CDIS				0x0F
-#define MPU9250_ASAX				0x10
-#define MPU9250_ASAY				0x11
-#define MPU9250_ASAZ				0x12
+#define AK9863_WIA					0x00
+#define AK9863_INFO					0x01
+#define AK9863_ST1					0x02
+#define AK9863_HXL					0x03
+#define AK9863_HXH					0x04
+#define AK9863_HYL					0x05
+#define	AK9863_HYH					0x06
+#define AK9863_HZL					0x07
+#define AK9863_HZH					0x08
+#define AK9863_ST2					0x09
+#define AK9863_CNTL1				0x0A
+#define AK9863_CNTL2				0x0B
+#define AK9863_RSV					0x0B
+#define AK9863_ASTC					0x0C
+#define AK9863_TS1					0x0D
+#define AK9863_TS2					0x0E
+#define AK9863_I2CDIS				0x0F
+#define AK9863_ASAX					0x10
+#define AK9863_ASAY					0x11
+#define AK9863_ASAZ					0x12
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
@@ -213,12 +215,23 @@ struct MPU9250 {
 	uint8_t Device_addres;
 	uint8_t Magnetometer_addres;
 
+	int16_t Accelerometer_sensitivity_factor;
+	int16_t Gyroscope_sensitivity_factor;
+	float Magnetometer_sesitivity_factor;
+	float Magnetometer_ASAX, Magnetometer_ASAY, Magnetometer_ASAZ;
+
 	int16_t Accelerometer_X, Accelerometer_Y, Accelerometer_Z;
 	int16_t Gyroscope_X, Gyroscope_Y, Gyroscope_Z;
 	int16_t Magnetometer_X, Magnetometer_Y, Magnetometer_Z;
 
-	int16_t Accelerometer_sensitivity_factor;
-	int16_t Gyroscope_sensitivity_factor;
+	float Accelerometer_X_g, Accelerometer_Y_g, Accelerometer_Z_g;
+	float Gyroscope_X_dgs, Gyroscope_Y_dgs, Gyroscope_Z_dgs;
+	float Gyroscope_X_dgs_past, Gyroscope_Y_dgs_past, Gyroscope_Z_dgs_past;
+	float Magnetometer_X_uT,  Magnetometer_Y_uT,  Magnetometer_Z_uT;
+
+	float Accelerometer_Roll, Accelerometer_Pitch, Accelerometer_Yaw;
+	float Gyroscope_Roll, Gyroscope_Pitch, Gyroscope_Yaw;
+	float Magnetometer_Roll, Magnetometer_Pitch, Magnetometer_Yaw;
 };
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
@@ -255,7 +268,8 @@ MPU9250_Error_code MPU9250_Read_Accelerometer(I2C_HandleTypeDef *I2Cx,
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 MPU9250_Error_code MPU9250_Read_Gyroscope(I2C_HandleTypeDef *I2Cx,
-										  struct MPU9250 *DataStructure);
+										  struct MPU9250 *DataStructure,
+										  float dt);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 

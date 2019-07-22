@@ -1,5 +1,7 @@
 #MicroXplorer Configuration settings - do not modify
 File.Version=6
+I2C1.I2C_Mode=I2C_Standard
+I2C1.IPParameters=I2C_Mode
 KeepUserPlacement=true
 Mcu.Family=STM32F1
 Mcu.IP0=I2C1
@@ -115,7 +117,7 @@ ProjectManager.ComputerToolchain=false
 ProjectManager.CoupleFile=true
 ProjectManager.CustomerFirmwarePackage=
 ProjectManager.DefaultFWLocation=true
-ProjectManager.DeletePrevious=false
+ProjectManager.DeletePrevious=true
 ProjectManager.DeviceId=STM32F103RBTx
 ProjectManager.FirmwarePackage=STM32Cube FW_F1 V1.7.0
 ProjectManager.FreePins=false
@@ -128,8 +130,8 @@ ProjectManager.MainLocation=Src
 ProjectManager.NoMain=false
 ProjectManager.PreviousToolchain=TrueSTUDIO
 ProjectManager.ProjectBuild=false
-ProjectManager.ProjectFileName=STM32_F103_MPU9250_lib.ioc
-ProjectManager.ProjectName=STM32_F103_MPU9250_lib
+ProjectManager.ProjectFileName=STM32_F103_MPU9250.ioc
+ProjectManager.ProjectName=STM32_F103_MPU9250
 ProjectManager.StackSize=0x400
 ProjectManager.TargetToolchain=TrueSTUDIO
 ProjectManager.ToolChainLocation=

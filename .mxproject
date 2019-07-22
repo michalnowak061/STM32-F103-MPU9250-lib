@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=C:/Users/mnowak5/Desktop/stm32_f103_mpu9250_lib/STM32_F103_MPU9250_lib/Inc
+HeaderPath=C:/Users/mnowak5/Desktop/STM32_F103_MPU9250/Inc
 HeaderFiles=gpio.h;i2c.h;usart.h;stm32f1xx_it.h;stm32f1xx_hal_conf.h;main.h;
-SourcePath=C:/Users/mnowak5/Desktop/stm32_f103_mpu9250_lib/STM32_F103_MPU9250_lib/Src
+SourcePath=C:/Users/mnowak5/Desktop/STM32_F103_MPU9250/Src
 SourceFiles=gpio.c;i2c.c;usart.c;stm32f1xx_it.c;stm32f1xx_hal_msp.c;main.c;
 
 [PreviousLibFiles]

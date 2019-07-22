@@ -24,11 +24,9 @@
 #include "usart.h"
 #include "gpio.h"
 
-#include "mpu9250.h"
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "mpu9250.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -49,15 +47,25 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+uint32_t I_Time_Start = 0;
+uint32_t I_Time_Stop = 0;
+float dt = 0;
 
 struct MPU9250 mpu1;
 
-int MPU9250_status = 0;
+uint8_t MPU9250_status = 0;
 
 int16_t Acce_X_global = 0, Acce_Y_global = 0, Acce_Z_global = 0;
 int16_t Gyro_X_global = 0, Gyro_Y_global = 0, Gyro_Z_global = 0;
-int16_t Mag_X_global = 0, Mag_Y_global = 0, Mag_Z_global = 0;
+int16_t Mag_X_global  = 0, Mag_Y_global  = 0, Mag_Z_global  = 0;
 
+float Acce_X_g_global = 0, Acce_Y_g_global = 0, Acce_Z_g_global = 0;
+float Gyro_X_dgs_global = 0, Gyro_Y_dgs_global = 0, Gyro_Z_dgs_global = 0;
+float Mag_X_uT_global = 0, Mag_Y_uT_global = 0, Mag_Z_uT_global = 0;
+
+float Acce_Roll_global = 0, Acce_Pitch_global = 0, Acce_Yaw_global = 0;
+float Gyro_Roll_global = 0, Gyro_Pitch_global = 0, Gyro_Yaw_global = 0;
+float Mag_Roll_global = 0, Mag_Pitch_global = 0, Mag_Yaw_global = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -103,34 +111,49 @@ int main(void)
   MX_I2C1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  HAL_Delay(100);
 
   if( MPU9250_Init(&hi2c1, &mpu1, MPU9250_Device_1, MPU9250_Acce_2G, MPU9250_Gyro_2000s) == MPU9250_Init_OK) {
 
 	  MPU9250_status = 1;
   }
+  else {
 
-  HAL_Delay(1000);
+	  MPU9250_status = 0;
+	  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+  }
 
+  HAL_Delay(100);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  I_Time_Start = I_Time_Stop;
+	  I_Time_Stop = HAL_GetTick();
+	  dt = (float)( I_Time_Stop - I_Time_Start ) / 1000;
 
-	  if( MPU9250_status ) {
+	  if (MPU9250_status == 1) {
 
 		  MPU9250_Read_Accelerometer(&hi2c1, &mpu1);
-		  MPU9250_Read_Gyroscope(&hi2c1, &mpu1);
+		  MPU9250_Read_Gyroscope(&hi2c1, &mpu1, dt);
 		  MPU9250_Read_Magnetometer(&hi2c1, &mpu1);
 
-		  //HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-		  //HAL_Delay(500);
+		  Acce_X_global = mpu1.Accelerometer_X; Acce_Y_global = mpu1.Accelerometer_Y; Acce_Z_global = mpu1.Accelerometer_Z;
+		  Gyro_X_global = mpu1.Gyroscope_X; Gyro_Y_global = mpu1.Gyroscope_Y; Gyro_Z_global = mpu1.Gyroscope_Z;
+		  Mag_X_global  = mpu1.Magnetometer_X; Mag_Y_global  = mpu1.Magnetometer_Y; Mag_Z_global  = mpu1.Magnetometer_Z;
+
+		  Acce_X_g_global = mpu1.Accelerometer_X_g; Acce_Y_g_global = mpu1.Accelerometer_Y_g; Acce_Z_g_global = mpu1.Accelerometer_Z_g;
+		  Gyro_X_dgs_global = mpu1.Gyroscope_X_dgs; Gyro_Y_dgs_global = mpu1.Gyroscope_Y_dgs; Gyro_Z_dgs_global = mpu1.Gyroscope_Z_dgs;
+		  Mag_X_uT_global = mpu1.Magnetometer_X_uT; Mag_Y_uT_global = mpu1.Magnetometer_Y_uT; Mag_Z_uT_global = mpu1.Magnetometer_Z_uT;
+
+		  Acce_Roll_global = mpu1.Accelerometer_Roll, Acce_Pitch_global = mpu1.Accelerometer_Pitch, Acce_Yaw_global = mpu1.Accelerometer_Yaw;
+		  Gyro_Roll_global = mpu1.Gyroscope_Roll, Gyro_Pitch_global = mpu1.Gyroscope_Pitch, Gyro_Yaw_global = mpu1.Gyroscope_Yaw;
+		  Mag_Roll_global = mpu1.Magnetometer_Roll, Mag_Pitch_global = mpu1.Magnetometer_Pitch, Mag_Yaw_global = mpu1.Magnetometer_Yaw;
 	  }
 
-	  Acce_X_global = mpu1.Accelerometer_X; Acce_Y_global = mpu1.Accelerometer_Y; Acce_Z_global = mpu1.Accelerometer_Z;
-	  Gyro_X_global = mpu1.Gyroscope_X;     Gyro_Y_global = mpu1.Gyroscope_Y;     Gyro_Z_global = mpu1.Gyroscope_Z;
-	  Mag_X_global  = mpu1.Magnetometer_X;  Mag_Y_global  = mpu1.Magnetometer_Y;  Mag_Z_global  = mpu1.Magnetometer_Z;
+	  HAL_Delay(100);
 
     /* USER CODE END WHILE */
 
