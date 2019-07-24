@@ -66,6 +66,8 @@ float Mag_X_uT_global = 0, Mag_Y_uT_global = 0, Mag_Z_uT_global = 0;
 float Acce_Roll_global = 0, Acce_Pitch_global = 0, Acce_Yaw_global = 0;
 float Gyro_Roll_global = 0, Gyro_Pitch_global = 0, Gyro_Yaw_global = 0;
 float Mag_Roll_global = 0, Mag_Pitch_global = 0, Mag_Yaw_global = 0;
+
+float Complementary_Roll = 0, Complementary_Pitch = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -115,6 +117,7 @@ int main(void)
 
   if( MPU9250_Init(&hi2c1, &mpu1, MPU9250_Device_1, MPU9250_Acce_2G, MPU9250_Gyro_2000s) == MPU9250_Init_OK) {
 
+	  MPU9250_Calibration(&hi2c1, &mpu1);
 	  MPU9250_status = 1;
   }
   else {
@@ -136,9 +139,8 @@ int main(void)
 
 	  if (MPU9250_status == 1) {
 
-		  MPU9250_Read_Accelerometer(&hi2c1, &mpu1);
-		  MPU9250_Read_Gyroscope(&hi2c1, &mpu1, dt);
-		  MPU9250_Read_Magnetometer(&hi2c1, &mpu1);
+		  MPU9250_Calculate_RPY(&hi2c1, &mpu1, dt);
+		  Complementary_filter(&mpu1, 0.02, dt);
 
 		  Acce_X_global = mpu1.Accelerometer_X; Acce_Y_global = mpu1.Accelerometer_Y; Acce_Z_global = mpu1.Accelerometer_Z;
 		  Gyro_X_global = mpu1.Gyroscope_X; Gyro_Y_global = mpu1.Gyroscope_Y; Gyro_Z_global = mpu1.Gyroscope_Z;
@@ -151,9 +153,11 @@ int main(void)
 		  Acce_Roll_global = mpu1.Accelerometer_Roll, Acce_Pitch_global = mpu1.Accelerometer_Pitch, Acce_Yaw_global = mpu1.Accelerometer_Yaw;
 		  Gyro_Roll_global = mpu1.Gyroscope_Roll, Gyro_Pitch_global = mpu1.Gyroscope_Pitch, Gyro_Yaw_global = mpu1.Gyroscope_Yaw;
 		  Mag_Roll_global = mpu1.Magnetometer_Roll, Mag_Pitch_global = mpu1.Magnetometer_Pitch, Mag_Yaw_global = mpu1.Magnetometer_Yaw;
+
+		  Complementary_Roll = mpu1.Complementary_filter_Roll, Complementary_Pitch = mpu1.Complementary_filter_Pitch;
 	  }
 
-	  HAL_Delay(100);
+	  HAL_Delay(10);
 
     /* USER CODE END WHILE */
 

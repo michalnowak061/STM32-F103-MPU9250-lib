@@ -153,26 +153,32 @@
 
 typedef enum {
 
-	MPU9250_Init_OK		= 0,
-	MPU9250_Init_FAIL	= 1,
+	MPU9250_Init_OK							= 0,
+	MPU9250_Init_FAIL						= 1,
 
-	MPU9250_Accelerometer_Config_OK   = 2,
-	MPU9250_Accelerometer_Config_FAIL = 3,
+	MPU9250_Accelerometer_Config_OK   		= 2,
+	MPU9250_Accelerometer_Config_FAIL 		= 3,
 
-	MPU9250_Gyroscope_Config_OK   = 4,
-	MPU9250_Gyroscope_Config_FAIL = 5,
+	MPU9250_Gyroscope_Config_OK   			= 4,
+	MPU9250_Gyroscope_Config_FAIL 			= 5,
 
-	MPU9250_Magnetometer_Config_OK   = 6,
-	MPU9250_Magnetometer_Config_FAIL = 7,
+	MPU9250_Magnetometer_Config_OK   		= 6,
+	MPU9250_Magnetometer_Config_FAIL 		= 7,
 
-	MPU9250_Read_Accelerometer_OK	= 8,
-	MPU9250_Read_Accelerometer_FAIL	= 9,
+	MPU9250_Read_Accelerometer_OK			= 14,
+	MPU9250_Read_Accelerometer_FAIL			= 15,
 
-	MPU9250_Read_Gyroscope_OK	= 10,
-	MPU9250_Read_Gyroscope_FAIL = 11,
+	MPU9250_Read_Gyroscope_OK				= 16,
+	MPU9250_Read_Gyroscope_FAIL 			= 17,
 
-	MPU9250_Read_Magnetometer_OK   = 12,
-	MPU9250_Read_Magnetometer_FAIL = 13
+	MPU9250_Read_Magnetometer_OK   			= 18,
+	MPU9250_Read_Magnetometer_FAIL 			= 19,
+
+	MPU9250_Calib_OK   						= 10,
+	MPU9250_Calib_FAIL 						= 11,
+
+	MPU9250_Calculate_RPY_OK				= 12,
+	MPU9250_Calculate_RPY_FAIL				= 13
 
 } MPU9250_Error_code;
 
@@ -224,6 +230,10 @@ struct MPU9250 {
 	int16_t Gyroscope_X, Gyroscope_Y, Gyroscope_Z;
 	int16_t Magnetometer_X, Magnetometer_Y, Magnetometer_Z;
 
+	float Accelerometer_X_offset, Accelerometer_Y_offset, Accelerometer_Z_offset;
+	float Gyroscope_X_offset, Gyroscope_Y_offset, Gyroscope_Z_offset;
+	float Magnetometer_X_offset, Magnetometer_Y_offset, Magnetometer_Z_offset;
+
 	float Accelerometer_X_g, Accelerometer_Y_g, Accelerometer_Z_g;
 	float Gyroscope_X_dgs, Gyroscope_Y_dgs, Gyroscope_Z_dgs;
 	float Gyroscope_X_dgs_past, Gyroscope_Y_dgs_past, Gyroscope_Z_dgs_past;
@@ -232,6 +242,8 @@ struct MPU9250 {
 	float Accelerometer_Roll, Accelerometer_Pitch, Accelerometer_Yaw;
 	float Gyroscope_Roll, Gyroscope_Pitch, Gyroscope_Yaw;
 	float Magnetometer_Roll, Magnetometer_Pitch, Magnetometer_Yaw;
+
+	float Complementary_filter_Roll, Complementary_filter_Pitch;
 };
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
@@ -252,7 +264,7 @@ MPU9250_Error_code MPU9250_Gyroscope_Configuration(I2C_HandleTypeDef *I2Cx,
 MPU9250_Error_code MPU9250_Magnetometer_Configuration(I2C_HandleTypeDef *I2Cx,
 												      struct MPU9250 *DataStructure);
 
-/* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
 
 MPU9250_Error_code MPU9250_Init(I2C_HandleTypeDef *I2Cx,
 								struct MPU9250 *DataStructure,
@@ -268,13 +280,29 @@ MPU9250_Error_code MPU9250_Read_Accelerometer(I2C_HandleTypeDef *I2Cx,
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 MPU9250_Error_code MPU9250_Read_Gyroscope(I2C_HandleTypeDef *I2Cx,
-										  struct MPU9250 *DataStructure,
-										  float dt);
+										  struct MPU9250 *DataStructure);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 MPU9250_Error_code MPU9250_Read_Magnetometer(I2C_HandleTypeDef *I2Cx,
 										     struct MPU9250 *DataStructure);
+
+/* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
+
+MPU9250_Error_code MPU9250_Calibration(I2C_HandleTypeDef *I2Cx,
+	      	  	  	  	  	  	  	   struct MPU9250 *DataStructure);
+
+/* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
+
+MPU9250_Error_code MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
+	      	  	  	  	  	  	  		 struct MPU9250 *DataStructure,
+										 float dt);
+
+/* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
+
+void Complementary_filter(struct MPU9250 *DataStructure,
+						  float weight,
+						  float dt);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
