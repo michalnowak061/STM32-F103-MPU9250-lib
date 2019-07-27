@@ -443,3 +443,25 @@ void Complementary_filter(struct MPU9250 *DataStructure,
 	DataStructure->Complementary_filter_Pitch  = ( (1-weight) * (DataStructure->Complementary_filter_Pitch - (DataStructure->Gyroscope_Y_dgs * dt) ) + (weight * DataStructure->Accelerometer_Pitch) );
 	DataStructure->Complementary_filter_Yaw    = ( (1-weight) * (DataStructure->Complementary_filter_Yaw   - (DataStructure->Gyroscope_Z_dgs * dt) ) + (weight * DataStructure->Magnetometer_Yaw) );
 }
+
+/* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
+float x_Acce_Roll_pri = 0, v_Acce_Roll_pri = 0, x_Acce_Roll_post = 0, v_Acce_Roll_post = 0;
+
+void AlphaBeta_filter(struct MPU9250 *DataStructure,
+					  float Acce_alpha, float Acce_beta,
+					  float Gyro_alpha, float Gyro_beta,
+					  float Mag_alpha, float Mag_beta,
+					  float dt) {
+
+	/* Case 1: Accelerometer */
+	x_Acce_Roll_pri = x_Acce_Roll_post + dt * v_Acce_Roll_post;
+
+	v_Acce_Roll_pri = v_Acce_Roll_post;
+
+	x_Acce_Roll_post = x_Acce_Roll_pri + Acce_alpha * (DataStructure->Accelerometer_Roll - x_Acce_Roll_pri);
+
+	v_Acce_Roll_post = v_Acce_Roll_pri + Acce_beta  * (DataStructure->Accelerometer_Roll - x_Acce_Roll_pri) / dt;
+
+	DataStructure->Acce_AlphaBeta_Roll = x_Acce_Roll_post;
+}
+/* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */

@@ -250,6 +250,10 @@ struct MPU9250 {
 	float Gyroscope_Roll, Gyroscope_Pitch, Gyroscope_Yaw;
 	float Magnetometer_Roll, Magnetometer_Pitch, Magnetometer_Yaw;
 
+	float Acce_AlphaBeta_Roll, Acce_AlphaBeta_Pitch;
+	float Gyroscope_AlphaBeta_Roll, Gyroscope_AlphaBeta_Pitch, Gyroscope_AlphaBeta_Yaw;
+	float Magnetometer_AlphaBeta_Roll, Magnetometer_AlphaBeta_Pitch, Magnetometer_AlphaBeta_Yaw;
+
 	float Complementary_filter_Roll, Complementary_filter_Pitch, Complementary_filter_Yaw;
 };
 
@@ -318,6 +322,14 @@ MPU9250_Error_code MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
 void Complementary_filter(struct MPU9250 *DataStructure,
 						  float weight,
 						  float dt);
+
+/* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
+
+void AlphaBeta_filter(struct MPU9250 *DataStructure,
+					  float Acce_alpha, float Acce_beta,
+					  float Gyro_alpha, float Gyro_beta,
+					  float Mag_alpha, float Mag_beta,
+					  float dt);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
