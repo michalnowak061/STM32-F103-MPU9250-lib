@@ -59,15 +59,19 @@ int16_t Acce_X_global = 0, Acce_Y_global = 0, Acce_Z_global = 0;
 int16_t Gyro_X_global = 0, Gyro_Y_global = 0, Gyro_Z_global = 0;
 int16_t Mag_X_global  = 0, Mag_Y_global  = 0, Mag_Z_global  = 0;
 
+float Acce_X_offset_global = 0, Acce_Y_offset_global = 0, Acce_Z_offset_global = 0;
+float Gyro_X_offset_global = 0 , Gyro_Y_offset_global = 0, Gyro_Z_offset_global = 0;
+float Mag_X_offset_global = 0, Mag_Y_offset_global = 0, Mag_Z_offset_global = 0;
+
 float Acce_X_g_global = 0, Acce_Y_g_global = 0, Acce_Z_g_global = 0;
 float Gyro_X_dgs_global = 0, Gyro_Y_dgs_global = 0, Gyro_Z_dgs_global = 0;
 float Mag_X_uT_global = 0, Mag_Y_uT_global = 0, Mag_Z_uT_global = 0;
 
-float Acce_Roll_global = 0, Acce_Pitch_global = 0, Acce_Yaw_global = 0;
+float Acce_Roll_global = 0, Acce_Pitch_global = 0;
 float Gyro_Roll_global = 0, Gyro_Pitch_global = 0, Gyro_Yaw_global = 0;
-float Mag_Roll_global = 0, Mag_Pitch_global = 0, Mag_Yaw_global = 0;
+float Mag_Yaw_global = 0;
 
-float Complementary_Roll = 0, Complementary_Pitch = 0;
+float Complementary_Roll = 0, Complementary_Pitch = 0, Complementary_Yaw = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -117,7 +121,33 @@ int main(void)
 
   if( MPU9250_Init(&hi2c1, &mpu1, MPU9250_Device_1, MPU9250_Acce_2G, MPU9250_Gyro_2000s) == MPU9250_Init_OK) {
 
-	  MPU9250_Calibration(&hi2c1, &mpu1);
+	  /*
+	  if( MPU9250_Calibration(&hi2c1, &mpu1) == MPU9250_Calib_OK ) {
+
+		  for(int i = 0; i < 3; ++i) {
+
+			  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+			  HAL_Delay(200);
+			  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+			  HAL_Delay(200);
+		  }
+	  }
+	  */
+
+	  if( MPU9250_Set_Offsets(&hi2c1, &mpu1,
+			  	  	  	  20.656, -167.292, 274.652,
+						  -0.836, -3.57, 14.693,
+						  24, 146, -92.5) == MPU9250_Offset_OK ) {
+
+		  for(int i = 0; i < 3; ++i) {
+
+			  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+		  	  HAL_Delay(200);
+			  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+ 			  HAL_Delay(200);
+  		  }
+	  }
+
 	  MPU9250_status = 1;
   }
   else {
@@ -142,6 +172,10 @@ int main(void)
 		  MPU9250_Calculate_RPY(&hi2c1, &mpu1, dt);
 		  Complementary_filter(&mpu1, 0.02, dt);
 
+		  Acce_X_offset_global = mpu1.Accelerometer_X_offset, Acce_Y_offset_global = mpu1.Accelerometer_Y_offset, Acce_Z_offset_global = mpu1.Accelerometer_Z_offset;
+		  Gyro_X_offset_global = mpu1.Gyroscope_X_offset , Gyro_Y_offset_global = mpu1.Gyroscope_Y_offset, Gyro_Z_offset_global = mpu1.Gyroscope_Z_offset;
+		  Mag_X_offset_global = mpu1.Magnetometer_X_offset, Mag_Y_offset_global = mpu1.Magnetometer_Y_offset, Mag_Z_offset_global = mpu1.Magnetometer_Z_offset;
+
 		  Acce_X_global = mpu1.Accelerometer_X; Acce_Y_global = mpu1.Accelerometer_Y; Acce_Z_global = mpu1.Accelerometer_Z;
 		  Gyro_X_global = mpu1.Gyroscope_X; Gyro_Y_global = mpu1.Gyroscope_Y; Gyro_Z_global = mpu1.Gyroscope_Z;
 		  Mag_X_global  = mpu1.Magnetometer_X; Mag_Y_global  = mpu1.Magnetometer_Y; Mag_Z_global  = mpu1.Magnetometer_Z;
@@ -150,11 +184,13 @@ int main(void)
 		  Gyro_X_dgs_global = mpu1.Gyroscope_X_dgs; Gyro_Y_dgs_global = mpu1.Gyroscope_Y_dgs; Gyro_Z_dgs_global = mpu1.Gyroscope_Z_dgs;
 		  Mag_X_uT_global = mpu1.Magnetometer_X_uT; Mag_Y_uT_global = mpu1.Magnetometer_Y_uT; Mag_Z_uT_global = mpu1.Magnetometer_Z_uT;
 
-		  Acce_Roll_global = mpu1.Accelerometer_Roll, Acce_Pitch_global = mpu1.Accelerometer_Pitch, Acce_Yaw_global = mpu1.Accelerometer_Yaw;
+		  Acce_Roll_global = mpu1.Accelerometer_Roll, Acce_Pitch_global = mpu1.Accelerometer_Pitch;
 		  Gyro_Roll_global = mpu1.Gyroscope_Roll, Gyro_Pitch_global = mpu1.Gyroscope_Pitch, Gyro_Yaw_global = mpu1.Gyroscope_Yaw;
-		  Mag_Roll_global = mpu1.Magnetometer_Roll, Mag_Pitch_global = mpu1.Magnetometer_Pitch, Mag_Yaw_global = mpu1.Magnetometer_Yaw;
+		  Mag_Yaw_global = mpu1.Magnetometer_Yaw;
 
-		  Complementary_Roll = mpu1.Complementary_filter_Roll, Complementary_Pitch = mpu1.Complementary_filter_Pitch;
+		  Complementary_Roll	= mpu1.Complementary_filter_Roll,
+		  Complementary_Pitch	= mpu1.Complementary_filter_Pitch,
+		  Complementary_Yaw 	= mpu1.Complementary_filter_Yaw;
 	  }
 
 	  HAL_Delay(10);

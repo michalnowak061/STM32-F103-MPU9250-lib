@@ -235,9 +235,9 @@ MPU9250_Error_code MPU9250_Read_Accelerometer(I2C_HandleTypeDef *I2Cx,
 		return MPU9250_Read_Accelerometer_FAIL;
 	}
 
-	DataStructure->Accelerometer_X = ( Bytes_temp[0] << 8 | Bytes_temp[1] ) - DataStructure->Accelerometer_X_offset;
-	DataStructure->Accelerometer_Y = ( Bytes_temp[2] << 8 | Bytes_temp[3] ) - DataStructure->Accelerometer_Y_offset;
-	DataStructure->Accelerometer_Z = ( Bytes_temp[4] << 8 | Bytes_temp[5] ) - DataStructure->Accelerometer_Z_offset;
+	DataStructure->Accelerometer_X = Z_AXIS_ORIENTATION *( ( Bytes_temp[0] << 8 | Bytes_temp[1] ) - DataStructure->Accelerometer_X_offset );
+	DataStructure->Accelerometer_Y = Z_AXIS_ORIENTATION *( ( Bytes_temp[2] << 8 | Bytes_temp[3] ) - DataStructure->Accelerometer_Y_offset );
+	DataStructure->Accelerometer_Z = Z_AXIS_ORIENTATION *( ( Bytes_temp[4] << 8 | Bytes_temp[5] ) - DataStructure->Accelerometer_Z_offset );
 
 	/* Case x: Calculate g-force values for XYZ axis */
 	DataStructure->Accelerometer_X_g = (float)(DataStructure->Accelerometer_X) / DataStructure->Accelerometer_sensitivity_factor;
@@ -289,9 +289,9 @@ MPU9250_Error_code MPU9250_Read_Magnetometer(I2C_HandleTypeDef *I2Cx,
 		return MPU9250_Read_Magnetometer_FAIL;
 	}
 
-	DataStructure->Magnetometer_X = Bytes_temp[2] << 8 | Bytes_temp[1];
-	DataStructure->Magnetometer_Y = Bytes_temp[4] << 8 | Bytes_temp[3];
-	DataStructure->Magnetometer_Z = Bytes_temp[6] << 8 | Bytes_temp[5];
+	DataStructure->Magnetometer_X = ( Bytes_temp[2] << 8 | Bytes_temp[1] ) - DataStructure->Magnetometer_X_offset;
+	DataStructure->Magnetometer_Y = ( Bytes_temp[4] << 8 | Bytes_temp[3] ) - DataStructure->Magnetometer_Y_offset;
+	DataStructure->Magnetometer_Z = ( Bytes_temp[6] << 8 | Bytes_temp[5] ) - DataStructure->Magnetometer_Z_offset;
 
 	/* Case x: Calculate uT (micro Tesla) value for XYZ axis */
 	DataStructure->Magnetometer_X_uT = DataStructure->Magnetometer_X * DataStructure->Magnetometer_ASAX * DataStructure->Magnetometer_sesitivity_factor;
@@ -306,10 +306,9 @@ MPU9250_Error_code MPU9250_Read_Magnetometer(I2C_HandleTypeDef *I2Cx,
 MPU9250_Error_code MPU9250_Calibration(I2C_HandleTypeDef *I2Cx,
 	      	  	  	  	  	  	  	   struct MPU9250 *DataStructure) {
 
-	float Acce_X_offset = 0, Acce_Y_offset = 0, Acce_Z_offset = 0;
-	float Gyro_X_offset = 0, Gyro_Y_offset = 0, Gyro_Z_offset = 0;
-
 	/* Case 1: Accelerometer calibration */
+	float Acce_X_offset = 0, Acce_Y_offset = 0, Acce_Z_offset = 0;
+
 	for(int i = 0; i < 1000; ++i) {
 
 		MPU9250_Read_Accelerometer(I2Cx, DataStructure);
@@ -321,12 +320,14 @@ MPU9250_Error_code MPU9250_Calibration(I2C_HandleTypeDef *I2Cx,
 
 	DataStructure->Accelerometer_X_offset = Acce_X_offset / 1000;
 	DataStructure->Accelerometer_Y_offset = Acce_Y_offset / 1000;
-	DataStructure->Accelerometer_Z_offset = Acce_Z_offset / 1000 - DataStructure->Accelerometer_sensitivity_factor;
+	DataStructure->Accelerometer_Z_offset = Z_AXIS_ORIENTATION * (Acce_Z_offset / 1000 - DataStructure->Accelerometer_sensitivity_factor);
 
 	/* Case 2: Gyroscope calibration */
+	float Gyro_X_offset = 0, Gyro_Y_offset = 0, Gyro_Z_offset = 0;
+
 	for(int i = 0; i < 1000; ++i) {
 
-		MPU9250_Read_Gyroscope(I2Cx,DataStructure);
+		MPU9250_Read_Gyroscope(I2Cx, DataStructure);
 
 		Gyro_X_offset += DataStructure->Gyroscope_X;
 		Gyro_Y_offset += DataStructure->Gyroscope_Y;
@@ -338,22 +339,57 @@ MPU9250_Error_code MPU9250_Calibration(I2C_HandleTypeDef *I2Cx,
 	DataStructure->Gyroscope_Z_offset = Gyro_Z_offset / 1000;
 
 	/* Case 3: Magnetometer calibration */
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
+	float X_max = 0, X_min = 0, Y_max = 0, Y_min = 0, Z_max = 0, Z_min = 0;
+
+	for(int i = 0; i < 1000; ++i) {
+
+		MPU9250_Read_Magnetometer(I2Cx, DataStructure);
+
+		if(DataStructure->Magnetometer_X > X_max) X_max = DataStructure->Magnetometer_X;
+		if(DataStructure->Magnetometer_Y > Y_max) Y_max = DataStructure->Magnetometer_Y;
+		if(DataStructure->Magnetometer_Z > Z_max) Z_max = DataStructure->Magnetometer_Z;
+
+		if(DataStructure->Magnetometer_X < X_min) X_min = DataStructure->Magnetometer_X;
+		if(DataStructure->Magnetometer_Y < Y_min) Y_min = DataStructure->Magnetometer_Y;
+		if(DataStructure->Magnetometer_Z < Z_min) Z_min = DataStructure->Magnetometer_Z;
+
+		HAL_Delay(20);
+	}
+
+	DataStructure->Magnetometer_X_offset = (X_max + X_min) / 2;
+	DataStructure->Magnetometer_Y_offset = (Y_max + Y_min) / 2;
+	DataStructure->Magnetometer_Z_offset = (Z_max + Z_min) / 2;
 
 	return MPU9250_Calib_OK;
 }
 
-/* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
+/* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
+MPU9250_Error_code MPU9250_Set_Offsets(I2C_HandleTypeDef *I2Cx,
+	      	  	  	  	  	  	  	   struct MPU9250 *DataStructure,
+									   float Acce_X_offset, float Acce_Y_offset, float Acce_Z_offset,
+									   float Gyro_X_offset, float Gyro_Y_offset, float Gyro_Z_offset,
+									   float Mag_X_offset, float Mag_Y_offset, float Mag_Z_offset) {
+
+	DataStructure->Accelerometer_X_offset = Acce_X_offset;
+	DataStructure->Accelerometer_Y_offset = Acce_Y_offset;
+	DataStructure->Accelerometer_Z_offset = Acce_Z_offset;
+
+	DataStructure->Gyroscope_X_offset = Gyro_X_offset;
+	DataStructure->Gyroscope_Y_offset = Gyro_Y_offset;
+	DataStructure->Gyroscope_Z_offset = Gyro_Z_offset;
+
+	DataStructure->Magnetometer_X_offset = Mag_X_offset;
+	DataStructure->Magnetometer_Y_offset = Mag_Y_offset;
+	DataStructure->Magnetometer_Z_offset = Mag_Z_offset;
+
+	return MPU9250_Offset_OK;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
+float Roll_test = 0, Pitch_test = 0;
+float cosRoll_test = 0, cosPitch_test = 0, sinRoll_test = 0, sinPitch_test = 0;
+float H_X_test = 0, H_Y_test = 0;
 MPU9250_Error_code MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
 	      	  	  	  	  	  	  		 struct MPU9250 *DataStructure,
 										 float dt) {
@@ -364,12 +400,13 @@ MPU9250_Error_code MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
 	MPU9250_Read_Magnetometer(I2Cx, DataStructure);
 
 	/* Case 2: Calculate accelerometer Roll and Pitch */
-	DataStructure->Accelerometer_Roll  = atan2(DataStructure->Accelerometer_Y_g, DataStructure->Accelerometer_Z_g) * (180 / M_PI);
-	DataStructure->Accelerometer_Pitch = atan2(DataStructure->Accelerometer_X_g, DataStructure->Accelerometer_Z_g) * (180 / M_PI);
+	DataStructure->Accelerometer_Roll  = atan2f(DataStructure->Accelerometer_Y_g, DataStructure->Accelerometer_Z_g) * (180 / M_PI);
+	DataStructure->Accelerometer_Pitch = atan2f(DataStructure->Accelerometer_X_g, DataStructure->Accelerometer_Z_g) * (180 / M_PI);
 
-	/* Case 3: Calculate gyroscope Roll and Pitch */
+	/* Case 3: Calculate gyroscope Roll, Pitch and Yaw */
 	DataStructure->Gyroscope_Roll  += ( 0.5 * dt * (DataStructure->Gyroscope_X_dgs + DataStructure->Gyroscope_X_dgs_past) );
 	DataStructure->Gyroscope_Pitch -= ( 0.5 * dt * (DataStructure->Gyroscope_Y_dgs + DataStructure->Gyroscope_Y_dgs_past) );
+	DataStructure->Gyroscope_Yaw   += ( 0.5 * dt * (DataStructure->Gyroscope_Z_dgs + DataStructure->Gyroscope_Z_dgs_past) );
 
 	// Save actual dgs/s value to data structure
 	DataStructure->Gyroscope_X_dgs_past = DataStructure->Gyroscope_X_dgs;
@@ -377,14 +414,21 @@ MPU9250_Error_code MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
 	DataStructure->Gyroscope_Z_dgs_past = DataStructure->Gyroscope_Z_dgs;
 
 	/* Case 4: Calculate magnetometer Yaw */
-	float Acce_Roll  = DataStructure->Accelerometer_Roll;
-	float Acce_Pitch = DataStructure->Accelerometer_Pitch;
+	float Roll  = DataStructure->Accelerometer_Roll;
+	float Pitch = DataStructure->Accelerometer_Pitch;
 
-	float Mag_X = DataStructure->Magnetometer_X_uT * cosf(Acce_Pitch) + DataStructure->Magnetometer_Y_uT * sinf(Acce_Roll) * sinf(Acce_Pitch) + DataStructure->Magnetometer_Z_uT * cosf(Acce_Roll) * sinf(Acce_Pitch);
-	float Mag_Y = DataStructure->Magnetometer_Y_uT * cosf(Acce_Roll) - DataStructure->Magnetometer_Z_uT * sinf(Acce_Roll);
+	float cosRoll = cosf(Roll * (M_PI / 180)), cosPitch = cosf(Pitch * (M_PI / 180));
+	float sinRoll = sinf(Roll * (M_PI / 180)), sinPitch = sinf(Pitch * (M_PI / 180));
 
-	//DataStructure->Magnetometer_Yaw = atan2f(-DataStructure->Magnetometer_Y_uT, DataStructure->Magnetometer_X_uT) * (180 / M_PI);
-	DataStructure->Magnetometer_Yaw = atan2f(-Mag_Y, Mag_X) * (180 / M_PI);
+	float H_X = (DataStructure->Magnetometer_X_uT * cosPitch) - (DataStructure->Magnetometer_Y_uT * sinRoll * sinPitch) - (DataStructure->Magnetometer_Z_uT * cosRoll * sinPitch);
+	float H_Y = (DataStructure->Magnetometer_Y_uT * cosRoll)  + (DataStructure->Magnetometer_Z_uT * sinRoll);
+
+	DataStructure->Magnetometer_Yaw = atan2f(-H_Y, H_X) * (180 / M_PI) + MAGNETIC_DECLINATION;
+
+	/* global variables test */
+	Roll_test = Roll, Pitch_test = Pitch;
+	cosRoll_test = cosRoll, cosPitch_test = cosPitch, sinRoll_test = sinRoll, sinPitch_test = sinPitch;
+	H_X_test = H_X, H_Y_test = H_Y;
 
 	return MPU9250_Calculate_RPY_OK;
 }
@@ -397,4 +441,5 @@ void Complementary_filter(struct MPU9250 *DataStructure,
 
 	DataStructure->Complementary_filter_Roll   = ( (1-weight) * (DataStructure->Complementary_filter_Roll  + (DataStructure->Gyroscope_X_dgs * dt) ) + (weight * DataStructure->Accelerometer_Roll)  );
 	DataStructure->Complementary_filter_Pitch  = ( (1-weight) * (DataStructure->Complementary_filter_Pitch - (DataStructure->Gyroscope_Y_dgs * dt) ) + (weight * DataStructure->Accelerometer_Pitch) );
+	DataStructure->Complementary_filter_Yaw    = ( (1-weight) * (DataStructure->Complementary_filter_Yaw   - (DataStructure->Gyroscope_Z_dgs * dt) ) + (weight * DataStructure->Magnetometer_Yaw) );
 }

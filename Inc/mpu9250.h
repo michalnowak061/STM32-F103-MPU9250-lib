@@ -11,6 +11,9 @@
 #include "i2c.h"
 #include "math.h"
 
+#define MAGNETIC_DECLINATION	( 4 + (29 / 60) ) /* <- for Boleslawiec */
+#define Z_AXIS_ORIENTATION		-1
+
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 #define MPU9250_SELF_TEST_X_GYRO	0x00
@@ -177,6 +180,9 @@ typedef enum {
 	MPU9250_Calib_OK   						= 10,
 	MPU9250_Calib_FAIL 						= 11,
 
+	MPU9250_Offset_OK						= 99,
+	MPU9250_Offset_FAIL						= 101,
+
 	MPU9250_Calculate_RPY_OK				= 12,
 	MPU9250_Calculate_RPY_FAIL				= 13
 
@@ -220,6 +226,7 @@ struct MPU9250 {
 	MPU9250_Device_number Device_number;
 	uint8_t Device_addres;
 	uint8_t Magnetometer_addres;
+	float Magnetic_declination;
 
 	int16_t Accelerometer_sensitivity_factor;
 	int16_t Gyroscope_sensitivity_factor;
@@ -239,11 +246,11 @@ struct MPU9250 {
 	float Gyroscope_X_dgs_past, Gyroscope_Y_dgs_past, Gyroscope_Z_dgs_past;
 	float Magnetometer_X_uT,  Magnetometer_Y_uT,  Magnetometer_Z_uT;
 
-	float Accelerometer_Roll, Accelerometer_Pitch, Accelerometer_Yaw;
+	float Accelerometer_Roll, Accelerometer_Pitch;
 	float Gyroscope_Roll, Gyroscope_Pitch, Gyroscope_Yaw;
 	float Magnetometer_Roll, Magnetometer_Pitch, Magnetometer_Yaw;
 
-	float Complementary_filter_Roll, Complementary_filter_Pitch;
+	float Complementary_filter_Roll, Complementary_filter_Pitch, Complementary_filter_Yaw;
 };
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
@@ -291,6 +298,14 @@ MPU9250_Error_code MPU9250_Read_Magnetometer(I2C_HandleTypeDef *I2Cx,
 
 MPU9250_Error_code MPU9250_Calibration(I2C_HandleTypeDef *I2Cx,
 	      	  	  	  	  	  	  	   struct MPU9250 *DataStructure);
+
+/* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
+
+MPU9250_Error_code MPU9250_Set_Offsets(I2C_HandleTypeDef *I2Cx,
+	  	  	  	   	   	   	   	   	   struct MPU9250 *DataStructure,
+									   float Acce_X_offset, float Acce_Y_offset, float Acce_Z_offset,
+									   float Gyro_X_offset, float Gyro_Y_offset, float Gyro_Z_offset,
+									   float Mag_X_offset, float Mag_Y_offset, float Mag_Z_offset);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
