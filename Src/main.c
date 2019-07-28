@@ -72,6 +72,8 @@ float Gyro_Roll_global = 0, Gyro_Pitch_global = 0, Gyro_Yaw_global = 0;
 float Mag_Yaw_global = 0;
 
 float Acce_AlphaBeta_Roll_global = 0, Acce_AlphaBeta_Pitch_global = 0;
+float Gyro_AlphaBeta_Roll_global = 0, Gyro_AlphaBeta_Pitch_global = 0, Gyro_AlphaBeta_Yaw_global = 0;
+float Mag_AlphaBeta_Yaw_global = 0;
 
 float Complementary_Roll = 0, Complementary_Pitch = 0, Complementary_Yaw = 0;
 /* USER CODE END PV */
@@ -192,7 +194,9 @@ int main(void)
 		  Gyro_Roll_global = mpu1.Gyroscope_Roll, Gyro_Pitch_global = mpu1.Gyroscope_Pitch, Gyro_Yaw_global = mpu1.Gyroscope_Yaw;
 		  Mag_Yaw_global = mpu1.Magnetometer_Yaw;
 
-		  Acce_AlphaBeta_Roll_global = mpu1.Acce_AlphaBeta_Roll;
+		  Acce_AlphaBeta_Roll_global  = mpu1.Acce_AlphaBeta_Roll; Acce_AlphaBeta_Pitch_global = mpu1.Acce_AlphaBeta_Pitch;
+		  Gyro_AlphaBeta_Roll_global = mpu1.Gyroscope_AlphaBeta_Roll, Gyro_AlphaBeta_Pitch_global = mpu1.Gyroscope_AlphaBeta_Pitch, Gyro_AlphaBeta_Yaw_global = mpu1.Gyroscope_AlphaBeta_Yaw;
+		  Mag_AlphaBeta_Yaw_global = mpu1.Magnetometer_AlphaBeta_Yaw;
 
 		  Complementary_Roll	= mpu1.Complementary_filter_Roll,
 		  Complementary_Pitch	= mpu1.Complementary_filter_Pitch,

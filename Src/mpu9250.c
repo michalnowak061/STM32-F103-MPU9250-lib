@@ -24,7 +24,15 @@ MPU9250_Error_code MPU9250_Accelerometer_Configuration(I2C_HandleTypeDef *I2Cx,
 		return MPU9250_Accelerometer_Config_FAIL;
 	}
 
-	/* Case 2: Save configuration to data structure */
+	/* Case 2: Set accelerometer low pass filter cut-off frequency */
+	Byte_temp = 0x0E;
+
+	if( HAL_I2C_Mem_Write(I2Cx, DataStructure->Device_addres, MPU9250_ACCEL_CONFIG_2, 1, &Byte_temp, 1, 1000) != HAL_OK ) {
+
+		return MPU9250_Accelerometer_Config_FAIL;
+	}
+
+	/* Case 3: Save configuration to data structure */
 	if(      Range == MPU9250_Acce_2G )     DataStructure->Accelerometer_sensitivity_factor = MPU9250_ACCE_SENSITIVITY_FACTOR_2G;
 	else if( Range == MPU9250_Acce_4G )		DataStructure->Accelerometer_sensitivity_factor = MPU9250_ACCE_SENSITIVITY_FACTOR_4G;
 	else if( Range == MPU9250_Acce_8G )		DataStructure->Accelerometer_sensitivity_factor = MPU9250_ACCE_SENSITIVITY_FACTOR_8G;
@@ -51,7 +59,15 @@ MPU9250_Error_code MPU9250_Gyroscope_Configuration(I2C_HandleTypeDef *I2Cx,
 		return MPU9250_Gyroscope_Config_FAIL;
 	}
 
-	/* Case 2: Save configuration to data structure */
+	/* Case 2: Set gyroscope low pass filter cut-off frequency */
+	Byte_temp = 0x0E;
+
+	if( HAL_I2C_Mem_Write(I2Cx, DataStructure->Device_addres, MPU9250_CONFIG, 1, &Byte_temp, 1, 1000) != HAL_OK ) {
+
+		return MPU9250_Gyroscope_Config_FAIL;
+	}
+
+	/* Case 3: Save configuration to data structure */
 	if(      Range == MPU9250_Gyro_250s )   DataStructure->Gyroscope_sensitivity_factor = MPU9250_GYRO_SENSITIVITY_FACTOR_250s;
 	else if( Range == MPU9250_Gyro_500s )	DataStructure->Gyroscope_sensitivity_factor = MPU9250_GYRO_SENSITIVITY_FACTOR_500s;
 	else if( Range == MPU9250_Gyro_1000s )	DataStructure->Gyroscope_sensitivity_factor = MPU9250_GYRO_SENSITIVITY_FACTOR_1000s;
@@ -446,6 +462,13 @@ void Complementary_filter(struct MPU9250 *DataStructure,
 
 /* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
 float x_Acce_Roll_pri = 0, v_Acce_Roll_pri = 0, x_Acce_Roll_post = 0, v_Acce_Roll_post = 0;
+float x_Acce_Pitch_pri = 0, v_Acce_Pitch_pri = 0, x_Acce_Pitch_post = 0, v_Acce_Pitch_post = 0;
+
+float x_Gyro_Roll_pri = 0, v_Gyro_Roll_pri = 0, x_Gyro_Roll_post = 0, v_Gyro_Roll_post = 0;
+float x_Gyro_Pitch_pri = 0, v_Gyro_Pitch_pri = 0, x_Gyro_Pitch_post = 0, v_Gyro_Pitch_post = 0;
+float x_Gyro_Yaw_pri = 0, v_Gyro_Yaw_pri = 0, x_Gyro_Yaw_post = 0, v_Gyro_Yaw_post = 0;
+
+float x_Mag_Yaw_pri = 0, v_Mag_Yaw_pri = 0, x_Mag_Yaw_post = 0, v_Mag_Yaw_post = 0;
 
 void AlphaBeta_filter(struct MPU9250 *DataStructure,
 					  float Acce_alpha, float Acce_beta,
@@ -454,13 +477,37 @@ void AlphaBeta_filter(struct MPU9250 *DataStructure,
 					  float dt) {
 
 	/* Case 1: Accelerometer */
-	x_Acce_Roll_pri = x_Acce_Roll_post + dt * v_Acce_Roll_post;
-
-	v_Acce_Roll_pri = v_Acce_Roll_post;
-
+	x_Acce_Roll_pri  = x_Acce_Roll_post + dt * v_Acce_Roll_post;
+	v_Acce_Roll_pri  = v_Acce_Roll_post;
 	x_Acce_Roll_post = x_Acce_Roll_pri + Acce_alpha * (DataStructure->Accelerometer_Roll - x_Acce_Roll_pri);
-
 	v_Acce_Roll_post = v_Acce_Roll_pri + Acce_beta  * (DataStructure->Accelerometer_Roll - x_Acce_Roll_pri) / dt;
+
+	x_Acce_Pitch_pri  = x_Acce_Pitch_post + dt * v_Acce_Pitch_post;
+	v_Acce_Pitch_pri  = v_Acce_Pitch_post;
+	x_Acce_Pitch_post = x_Acce_Pitch_pri + Acce_alpha * (DataStructure->Accelerometer_Pitch - x_Acce_Pitch_pri);
+	v_Acce_Pitch_post = v_Acce_Pitch_pri + Acce_beta  * (DataStructure->Accelerometer_Pitch - x_Acce_Pitch_pri) / dt;
+
+	/* Case 2: Gyroscope */
+	x_Gyro_Roll_pri  = x_Gyro_Roll_post + dt * v_Gyro_Roll_post;
+	v_Gyro_Roll_pri  = v_Gyro_Roll_post;
+	x_Gyro_Roll_post = x_Gyro_Roll_pri + Gyro_alpha * (DataStructure->Gyroscope_Roll - x_Gyro_Roll_pri);
+	v_Gyro_Roll_post = v_Gyro_Roll_pri + Gyro_beta  * (DataStructure->Gyroscope_Roll - x_Gyro_Roll_pri) / dt;
+
+	x_Gyro_Pitch_pri  = x_Gyro_Pitch_post + dt * v_Gyro_Pitch_post;
+	v_Gyro_Pitch_pri  = v_Gyro_Pitch_post;
+	x_Gyro_Pitch_post = x_Gyro_Pitch_pri + Gyro_alpha * (DataStructure->Gyroscope_Pitch - x_Gyro_Pitch_pri);
+	v_Gyro_Pitch_post = v_Gyro_Pitch_pri + Gyro_beta  * (DataStructure->Gyroscope_Pitch - x_Gyro_Pitch_pri) / dt;
+
+	x_Gyro_Yaw_pri  = x_Gyro_Yaw_post + dt * v_Gyro_Yaw_post;
+	v_Gyro_Yaw_pri  = v_Gyro_Yaw_post;
+	x_Gyro_Yaw_post = x_Gyro_Yaw_pri + Gyro_alpha * (DataStructure->Gyroscope_Yaw - x_Gyro_Yaw_pri);
+	v_Gyro_Yaw_post = v_Gyro_Yaw_pri + Gyro_beta  * (DataStructure->Gyroscope_Yaw - x_Gyro_Yaw_pri) / dt;
+
+	/* Case 3: Magnetometer */
+	x_Mag_Yaw_pri  = x_Mag_Yaw_post + dt * v_Mag_Yaw_post;
+	v_Mag_Yaw_pri  = v_Mag_Yaw_post;
+	x_Mag_Yaw_post = x_Mag_Yaw_pri + Mag_alpha * (DataStructure->Magnetometer_Yaw - x_Mag_Yaw_pri);
+	v_Mag_Yaw_post = v_Mag_Yaw_pri + Mag_beta  * (DataStructure->Magnetometer_Yaw - x_Mag_Yaw_pri) / dt;
 
 	DataStructure->Acce_AlphaBeta_Roll = x_Acce_Roll_post;
 }

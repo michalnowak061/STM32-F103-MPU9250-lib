@@ -252,7 +252,7 @@ struct MPU9250 {
 
 	float Acce_AlphaBeta_Roll, Acce_AlphaBeta_Pitch;
 	float Gyroscope_AlphaBeta_Roll, Gyroscope_AlphaBeta_Pitch, Gyroscope_AlphaBeta_Yaw;
-	float Magnetometer_AlphaBeta_Roll, Magnetometer_AlphaBeta_Pitch, Magnetometer_AlphaBeta_Yaw;
+	float Magnetometer_AlphaBeta_Yaw;
 
 	float Complementary_filter_Roll, Complementary_filter_Pitch, Complementary_filter_Yaw;
 };
