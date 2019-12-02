@@ -1,0 +1,2 @@
+crc.c:10:6:CRC8_SingleByte	24	static
+crc.c:28:6:CRC8_DataArray	24	static
