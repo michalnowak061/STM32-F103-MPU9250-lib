@@ -1,5 +1,5 @@
-freertos.c:112:6:vApplicationGetIdleTaskMemory	24	static
-freertos.c:126:6:MX_FREERTOS_Init	72	static
-freertos.c:169:6:Start_USART_Task	104	static
-freertos.c:203:6:Start_IMU_Task	688	static
-freertos.c:330:6:HAL_UART_RxCpltCallback	16	static
+freertos.c:114:6:vApplicationGetIdleTaskMemory	24	static
+freertos.c:128:6:MX_FREERTOS_Init	72	static
+freertos.c:171:6:Start_USART_Task	64	static
+freertos.c:200:6:Start_IMU_Task	688	static
+freertos.c:340:6:HAL_UART_RxCpltCallback	16	static

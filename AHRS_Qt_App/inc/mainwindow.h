@@ -7,6 +7,10 @@
 #include <QKeyEvent>
 #include <QSettings>
 #include <cmath>
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <QTimer>
 
 #include "qcustomplot.h"
 #include "bluetooth.h"
@@ -61,48 +65,45 @@ private:
 
     bool Show_Gyroscope_X, Show_Gyroscope_Y, Show_Gyroscope_Z;
 
-    bool Gyroscope_Graph_Run;
-    bool Accelerometer_Graph_Run;
-    bool Magnetometer_Graph_Run;
-    bool Filter_Graph_Run;
+    bool Complementary_Graph_Run;
+    bool Kalman_Graph_Run;
+    bool Madgwick_Graph_Run;
 
     int Set_Speed;
 
     void loadSettings();
     void saveSettings();
 
-    void MainWindow_Default_View();
+    //void MainWindow_Default_View();
     void MainWindow_Setup_Icons();
 
-    void MainWindow_Setup_Gyroscope_Graph();
-    void MainWindow_Setup_Accelerometer_Graph();
-    void MainWindow_Setup_Magnetometer_Graph();
-    void MainWindow_Setup_Filter_Graph();
+    void MainWindow_Setup_Complementary_Graph();
+    void MainWindow_Setup_Kalman_Graph();
+    void MainWindow_Setup_Madgwick_Graph();
+    //void MainWindow_Setup_Filter_Graph();
 
     void MainWindow_Display_IMU_data();
 
     void closeEvent(QCloseEvent *event) override;
 
-    QList<int> Splitter_Position;
-
-    double convert(double angle);
+    //QList<int> Splitter_Position;
+    QList<QString> Data_lines;
+    int data_iterator = 1;
 
 private slots:
 
-    void on_checkBox_Filter_Roll_clicked();
-    void on_checkBox_Filter_Pitch_clicked();
-    void on_checkBox_Filter_Yaw_clicked();
+    //void on_checkBox_Filter_Roll_clicked();
+    //void on_checkBox_Filter_Pitch_clicked();
+    //void on_checkBox_Filter_Yaw_clicked();
 
-    void on_pushButton_Send_clicked();
-
+    //void on_pushButton_Send_clicked();
     void on_pushButton_Exit_clicked();
 
     void on_doubleSpinBox_Complementary_filter_weight_valueChanged(double arg1);
 
-    void on_pushButton_Plots_Center_clicked();
-    void on_pushButton_Plots_Start_Stop_clicked();
-
-    void on_pushButton_Reset_Plots_Range_clicked();
+    //void on_pushButton_Plots_Center_clicked();
+    //void on_pushButton_Plots_Start_Stop_clicked();
+    //void on_pushButton_Reset_Plots_Range_clicked();
 
     void on_radioButton_Complementary_filter_toggled(bool checked);
     void on_radioButton_Kalman_filter_toggled(bool checked);
@@ -126,6 +127,9 @@ private slots:
 
     void on_doubleSpinBox_Kalman_filter_process_variance_valueChanged(double arg1);
     void on_doubleSpinBox_Kalman_filter_measure_variance_valueChanged(double arg1);
+
+    void on_pushButton_Data_Clear_clicked();
+    void on_pushButton_Data_Save_clicked();
 
 signals:
 

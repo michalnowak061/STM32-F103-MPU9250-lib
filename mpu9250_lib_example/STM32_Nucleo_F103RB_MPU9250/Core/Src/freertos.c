@@ -67,7 +67,9 @@ float g_x_offset_global = 0, g_y_offset_global = 0, g_z_offset_global = 0;
 float m_x_offset_global = 0, m_y_offset_global = 0, m_z_offset_global = 0;
 float m_x_scale_global = 0, m_y_scale_global = 0, m_z_scale_global = 0;
 
-float Filter_Roll_global = 0, Filter_Pitch_global = 0, Filter_Yaw_global = 0;
+float Complementary_Roll_global = 0, Complementary_Pitch_global = 0, Complementary_Yaw_global = 0;
+float Kalman_Roll_global = 0, Kalman_Pitch_global = 0, Kalman_Yaw_global = 0;
+float Madgwick_Roll_global = 0, Madgwick_Pitch_global = 0, Madgwick_Yaw_global = 0;
 
 float Filter_weight_global = COMPLEMENTARY_FILTER_WEIGHT;
 float Kalman_filter_process_variance = KALMAN_PROCESS_VARIANCE;
@@ -175,15 +177,10 @@ void Start_USART_Task(void const *argument) {
 	/* Infinite loop */
 	for (;;) {
 
-		HC05_Fill_Data_frame_to_PC(&DT_PC, Data_to_PC, 0,
-				Filter_Roll_global, Filter_Pitch_global, Filter_Yaw_global,
-				//a_roll_global, a_pitch_global, m_yaw_global,
-				//g_roll_global, g_pitch_global, /*g_yaw_global*/0,
-				//0, 0, m_yaw_global,
-				0, 0,
-				g_x_dgs_global, g_y_dgs_global, g_z_dgs_global,
-				a_x_g_global, a_y_g_global, a_z_g_global,
-				m_x_uT_global, m_y_uT_global, m_z_uT_global);
+		HC05_Fill_Data_frame_to_PC(&DT_PC, Data_to_PC,
+				Complementary_Roll_global, Complementary_Pitch_global, Complementary_Yaw_global,
+				Kalman_Roll_global, Kalman_Pitch_global, Kalman_Yaw_global,
+				Madgwick_Roll_global, Madgwick_Pitch_global, Madgwick_Yaw_global);
 
 		HAL_UART_Transmit_DMA(HC05_handle, Data_to_PC, DATA_FRAME_TO_PC_SIZE);
 
@@ -290,7 +287,8 @@ void Start_IMU_Task(void const *argument) {
 			Madgwick_filter(&mpu1, Madgwick_filter_beta, dt);
 			Mahony_filter(&mpu1, dt);
 
-			/* Complementary filter */
+			/* Filters data */
+			/*
 			switch (Which_filter_global) {
 
 				case 0:
@@ -317,6 +315,18 @@ void Start_IMU_Task(void const *argument) {
 					Filter_Yaw_global   = mpu1.Mahony_filter_Yaw - mpu1.Magnetometer_Yaw_offset;
 					break;
 			}
+			*/
+			Complementary_Roll_global  = mpu1.Complementary_filter_Roll;
+			Complementary_Pitch_global = mpu1.Complementary_filter_Pitch;
+			Complementary_Yaw_global   = mpu1.Complementary_filter_Yaw - mpu1.Magnetometer_Yaw_offset;
+
+			Kalman_Roll_global  = mpu1.Kalman_filter_Roll;
+			Kalman_Pitch_global = mpu1.Kalman_filter_Pitch;
+			Kalman_Yaw_global   = mpu1.Kalman_filter_Yaw - mpu1.Magnetometer_Yaw_offset;
+
+			Madgwick_Roll_global  = mpu1.Madgwick_filter_Roll;
+			Madgwick_Pitch_global = mpu1.Madgwick_filter_Pitch;
+			Madgwick_Yaw_global   = mpu1.Madgwick_filter_Yaw - mpu1.Magnetometer_Yaw_offset;
 		}
 
 		osDelay(10);

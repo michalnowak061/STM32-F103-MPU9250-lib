@@ -1,4 +1,4 @@
 hc05.c:12:9:HC05_Divide_int16	16	static
 hc05.c:28:9:HC05_Merge_bytes	24	static
 hc05.c:44:6:HC05_Fill_Data_frame_to_PC	32	static
-hc05.c:109:5:HC05_Parse_Data_frame	24	static
+hc05.c:85:5:HC05_Parse_Data_frame	24	static

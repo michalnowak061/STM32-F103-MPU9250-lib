@@ -16,24 +16,23 @@ MainWindow::MainWindow(QWidget *parent) :
 
     Show_Filter_Roll = true; Show_Filter_Pitch = true; Show_Filter_Yaw = true;
 
-    Gyroscope_Graph_Run = true;
-    Accelerometer_Graph_Run = true;
-    Magnetometer_Graph_Run = true;
-    Filter_Graph_Run = true;
+    Complementary_Graph_Run = true;
+    Kalman_Graph_Run = true;
+    Madgwick_Graph_Run = true;
 
     Data_to.Complementary_filter_weight = 0;
 
     m_sSettingsFile = QApplication::applicationDirPath().left(1) + ":/main_settings.ini";
     loadSettings();
 
-    MainWindow_Default_View();
+    //MainWindow_Default_View();
     MainWindow_Setup_Icons();
 
     // Setup real time graphs
-    MainWindow_Setup_Gyroscope_Graph();
-    MainWindow_Setup_Accelerometer_Graph();
-    MainWindow_Setup_Magnetometer_Graph();
-    MainWindow_Setup_Filter_Graph();
+    MainWindow_Setup_Complementary_Graph();
+    MainWindow_Setup_Kalman_Graph();
+    MainWindow_Setup_Madgwick_Graph();
+    //MainWindow_Setup_Filter_Graph();
 
     // Connection with CommunicationWindow
     connect(this, SIGNAL( Disconnect_Signal() ), CW, SLOT( Disconnect_Slot() ) );
@@ -56,7 +55,7 @@ MainWindow::MainWindow(QWidget *parent) :
     // Setup CommunicationWindow
     CW->exec();
 
-    Splitter_Position = ui->splitter->sizes();
+    //Splitter_Position = ui->splitter->sizes();
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -89,101 +88,72 @@ void MainWindow::closeEvent(QCloseEvent *event)
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-double MainWindow::convert(double angle)
-{
-    return fmodf( angle + 360, 360 );
-}
 
-// -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void MainWindow::MainWindow_Setup_Filter_Graph()
+void MainWindow::MainWindow_Setup_Complementary_Graph()
 {
-    ui->Filter_Graph->addGraph(); // red line
-    ui->Filter_Graph->graph(0)->setPen(QPen(QColor(255, 0, 0)));
-    ui->Filter_Graph->addGraph(); // green line
-    ui->Filter_Graph->graph(1)->setPen(QPen(QColor(0, 255, 0)));
-    ui->Filter_Graph->addGraph(); // blue line
-    ui->Filter_Graph->graph(2)->setPen(QPen(QColor(0, 0, 255)));
+    ui->Complementary_Graph->addGraph(); // red line
+    ui->Complementary_Graph->graph(0)->setPen(QPen(QColor(255, 0, 0)));
+    ui->Complementary_Graph->addGraph(); // green line
+    ui->Complementary_Graph->graph(1)->setPen(QPen(QColor(0, 255, 0)));
+    ui->Complementary_Graph->addGraph(); // blue line
+    ui->Complementary_Graph->graph(2)->setPen(QPen(QColor(0, 0, 255)));
 
     QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
     timeTicker->setTimeFormat("%h:%m:%s");
 
-    ui->Filter_Graph->xAxis->setTicker(timeTicker);
-    ui->Filter_Graph->axisRect()->setupFullAxesBox();
-    ui->Filter_Graph->yAxis->setRange(-1, 1);
+    ui->Complementary_Graph->xAxis->setTicker(timeTicker);
+    ui->Complementary_Graph->axisRect()->setupFullAxesBox();
+    ui->Complementary_Graph->yAxis->setRange(-1, 1);
 
     // make left and bottom axes transfer their ranges to right and top axes:
-    connect(ui->Filter_Graph->xAxis, SIGNAL(rangeChanged(QCPRange)), ui->Filter_Graph->xAxis2, SLOT(setRange(QCPRange)));
-    connect(ui->Filter_Graph->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->Filter_Graph->yAxis2, SLOT(setRange(QCPRange)));
+    connect(ui->Complementary_Graph->xAxis, SIGNAL(rangeChanged(QCPRange)), ui->Complementary_Graph->xAxis2, SLOT(setRange(QCPRange)));
+    connect(ui->Complementary_Graph->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->Complementary_Graph->yAxis2, SLOT(setRange(QCPRange)));
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-void MainWindow::MainWindow_Setup_Gyroscope_Graph()
+void MainWindow::MainWindow_Setup_Kalman_Graph()
 {
-    ui->Gyroscope_Graph->addGraph(); // red line
-    ui->Gyroscope_Graph->graph(0)->setPen(QPen(QColor(255, 0, 0)));
-    ui->Gyroscope_Graph->addGraph(); // green line
-    ui->Gyroscope_Graph->graph(1)->setPen(QPen(QColor(0, 255, 0)));
-    ui->Gyroscope_Graph->addGraph(); // blue line
-    ui->Gyroscope_Graph->graph(2)->setPen(QPen(QColor(0, 0, 255)));
+    ui->Kalman_Graph->addGraph(); // red line
+    ui->Kalman_Graph->graph(0)->setPen(QPen(QColor(255, 0, 0)));
+    ui->Kalman_Graph->addGraph(); // green line
+    ui->Kalman_Graph->graph(1)->setPen(QPen(QColor(0, 255, 0)));
+    ui->Kalman_Graph->addGraph(); // blue line
+    ui->Kalman_Graph->graph(2)->setPen(QPen(QColor(0, 0, 255)));
 
     QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
     timeTicker->setTimeFormat("%h:%m:%s");
 
-    ui->Gyroscope_Graph->xAxis->setTicker(timeTicker);
-    ui->Gyroscope_Graph->axisRect()->setupFullAxesBox();
-    ui->Gyroscope_Graph->yAxis->setRange(-1, 1);
+    ui->Kalman_Graph->xAxis->setTicker(timeTicker);
+    ui->Kalman_Graph->axisRect()->setupFullAxesBox();
+    ui->Kalman_Graph->yAxis->setRange(-1, 1);
 
     // make left and bottom axes transfer their ranges to right and top axes:
-    connect(ui->Gyroscope_Graph->xAxis, SIGNAL(rangeChanged(QCPRange)), ui->Gyroscope_Graph->xAxis2, SLOT(setRange(QCPRange)));
-    connect(ui->Gyroscope_Graph->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->Gyroscope_Graph->yAxis2, SLOT(setRange(QCPRange)));
+    connect(ui->Kalman_Graph->xAxis, SIGNAL(rangeChanged(QCPRange)), ui->Kalman_Graph->xAxis2, SLOT(setRange(QCPRange)));
+    connect(ui->Kalman_Graph->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->Kalman_Graph->yAxis2, SLOT(setRange(QCPRange)));
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-void MainWindow::MainWindow_Setup_Accelerometer_Graph()
+void MainWindow::MainWindow_Setup_Madgwick_Graph()
 {
-    ui->Accelerometer_Graph->addGraph(); // red line
-    ui->Accelerometer_Graph->graph(0)->setPen(QPen(QColor(255, 0, 0)));
-    ui->Accelerometer_Graph->addGraph(); // green line
-    ui->Accelerometer_Graph->graph(1)->setPen(QPen(QColor(0, 255, 0)));
-    ui->Accelerometer_Graph->addGraph(); // blue line
-    ui->Accelerometer_Graph->graph(2)->setPen(QPen(QColor(0, 0, 255)));
+    ui->Madgwick_Graph->addGraph(); // red line
+    ui->Madgwick_Graph->graph(0)->setPen(QPen(QColor(255, 0, 0)));
+    ui->Madgwick_Graph->addGraph(); // green line
+    ui->Madgwick_Graph->graph(1)->setPen(QPen(QColor(0, 255, 0)));
+    ui->Madgwick_Graph->addGraph(); // blue line
+    ui->Madgwick_Graph->graph(2)->setPen(QPen(QColor(0, 0, 255)));
 
     QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
     timeTicker->setTimeFormat("%h:%m:%s");
 
-    ui->Accelerometer_Graph->xAxis->setTicker(timeTicker);
-    ui->Accelerometer_Graph->axisRect()->setupFullAxesBox();
-    ui->Accelerometer_Graph->yAxis->setRange(-1, 1);
+    ui->Madgwick_Graph->xAxis->setTicker(timeTicker);
+    ui->Madgwick_Graph->axisRect()->setupFullAxesBox();
+    ui->Madgwick_Graph->yAxis->setRange(-1, 1);
 
     // make left and bottom axes transfer their ranges to right and top axes:
-    connect(ui->Accelerometer_Graph->xAxis, SIGNAL(rangeChanged(QCPRange)), ui->Accelerometer_Graph->xAxis2, SLOT(setRange(QCPRange)));
-    connect(ui->Accelerometer_Graph->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->Accelerometer_Graph->yAxis2, SLOT(setRange(QCPRange)));
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void MainWindow::MainWindow_Setup_Magnetometer_Graph()
-{
-    ui->Magnetometer_Graph->addGraph(); // red line
-    ui->Magnetometer_Graph->graph(0)->setPen(QPen(QColor(255, 0, 0)));
-    ui->Magnetometer_Graph->addGraph(); // green line
-    ui->Magnetometer_Graph->graph(1)->setPen(QPen(QColor(0, 255, 0)));
-    ui->Magnetometer_Graph->addGraph(); // blue line
-    ui->Magnetometer_Graph->graph(2)->setPen(QPen(QColor(0, 0, 255)));
-
-    QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
-    timeTicker->setTimeFormat("%h:%m:%s");
-
-    ui->Magnetometer_Graph->xAxis->setTicker(timeTicker);
-    ui->Magnetometer_Graph->axisRect()->setupFullAxesBox();
-    ui->Magnetometer_Graph->yAxis->setRange(-1, 1);
-
-    // make left and bottom axes transfer their ranges to right and top axes:
-    connect(ui->Magnetometer_Graph->xAxis, SIGNAL(rangeChanged(QCPRange)), ui->Magnetometer_Graph->xAxis2, SLOT(setRange(QCPRange)));
-    connect(ui->Magnetometer_Graph->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->Magnetometer_Graph->yAxis2, SLOT(setRange(QCPRange)));
+    connect(ui->Madgwick_Graph->xAxis, SIGNAL(rangeChanged(QCPRange)), ui->Madgwick_Graph->xAxis2, SLOT(setRange(QCPRange)));
+    connect(ui->Madgwick_Graph->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->Madgwick_Graph->yAxis2, SLOT(setRange(QCPRange)));
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -199,9 +169,17 @@ void MainWindow::MainWindow_Display_IMU_data()
     //double Filter_Pitch = convert(Data_from.Filter_pitch);
     //double Filter_Yaw   = convert(Data_from.Filter_yaw);
 
-    double Filter_Roll  = Data_from.Filter_roll;
-    double Filter_Pitch = Data_from.Filter_pitch;
-    double Filter_Yaw   = Data_from.Filter_yaw;
+    double Complementary_Roll  = Data_from.Complementary_roll;
+    double Complementary_Pitch = Data_from.Complementary_pitch;
+    double Complementary_Yaw   = Data_from.Complementary_yaw;
+
+    double Kalman_Roll  = Data_from.Kalman_roll;
+    double Kalman_Pitch = Data_from.Kalman_pitch;
+    double Kalman_Yaw   = Data_from.Kalman_yaw;
+
+    double Madgwick_Roll  = Data_from.Madgwick_roll;
+    double Madgwick_Pitch = Data_from.Madgwick_pitch;
+    double Madgwick_Yaw   = Data_from.Madgwick_yaw;
 
     double Gyroscope_X = Data_from.g_x_dgs;
     double Gyroscope_Y = Data_from.g_y_dgs;
@@ -216,76 +194,67 @@ void MainWindow::MainWindow_Display_IMU_data()
     double Magnetometer_Z = Data_from.m_z_uT;
 
     // add data to lines:
-    if(Show_Gyroscope_X == true) ui->Gyroscope_Graph->graph(0)->addData(key, Gyroscope_X);
-    if(Show_Gyroscope_Y == true) ui->Gyroscope_Graph->graph(1)->addData(key, Gyroscope_Y);
-    if(Show_Gyroscope_Z == true) ui->Gyroscope_Graph->graph(2)->addData(key, Gyroscope_Z);
+    if(Show_Gyroscope_X == true) ui->Complementary_Graph->graph(0)->addData(key, Complementary_Roll);
+    if(Show_Gyroscope_Y == true) ui->Complementary_Graph->graph(1)->addData(key, Complementary_Pitch);
+    if(Show_Gyroscope_Z == true) ui->Complementary_Graph->graph(2)->addData(key, Complementary_Yaw);
 
-    if(Show_Accelerometer_X == true) ui->Accelerometer_Graph->graph(0)->addData(key, Accelerometer_X);
-    if(Show_Accelerometer_Y == true) ui->Accelerometer_Graph->graph(1)->addData(key, Accelerometer_Y);
-    if(Show_Accelerometer_Z == true) ui->Accelerometer_Graph->graph(2)->addData(key, Accelerometer_Z);
+    if(Show_Accelerometer_X == true) ui->Kalman_Graph->graph(0)->addData(key, Kalman_Roll);
+    if(Show_Accelerometer_Y == true) ui->Kalman_Graph->graph(1)->addData(key, Kalman_Pitch);
+    if(Show_Accelerometer_Z == true) ui->Kalman_Graph->graph(2)->addData(key, Kalman_Yaw);
 
-    if(Show_Magnetometer_X == true) ui->Magnetometer_Graph->graph(0)->addData(key, Magnetometer_X);
-    if(Show_Magnetometer_Y == true) ui->Magnetometer_Graph->graph(1)->addData(key, Magnetometer_Y);
-    if(Show_Magnetometer_Z == true) ui->Magnetometer_Graph->graph(2)->addData(key, Magnetometer_Z);
+    if(Show_Magnetometer_X == true) ui->Madgwick_Graph->graph(0)->addData(key, Madgwick_Roll);
+    if(Show_Magnetometer_Y == true) ui->Madgwick_Graph->graph(1)->addData(key, Madgwick_Pitch);
+    if(Show_Magnetometer_Z == true) ui->Madgwick_Graph->graph(2)->addData(key, Madgwick_Yaw);
 
-    if(Show_Filter_Roll  == true) ui->Filter_Graph->graph(0)->addData(key, Filter_Roll);
-    if(Show_Filter_Pitch == true) ui->Filter_Graph->graph(1)->addData(key, Filter_Pitch);
-    if(Show_Filter_Yaw   == true) ui->Filter_Graph->graph(2)->addData(key, Filter_Yaw);
+    ui->Complementary_Graph->graph(0)->rescaleValueAxis(true);
+    ui->Complementary_Graph->graph(1)->rescaleValueAxis(true);
+    ui->Complementary_Graph->graph(2)->rescaleValueAxis(true);
 
-    ui->Gyroscope_Graph->graph(0)->rescaleValueAxis(true);
-    ui->Gyroscope_Graph->graph(1)->rescaleValueAxis(true);
-    ui->Gyroscope_Graph->graph(2)->rescaleValueAxis(true);
+    ui->Kalman_Graph->graph(0)->rescaleValueAxis(true);
+    ui->Kalman_Graph->graph(1)->rescaleValueAxis(true);
+    ui->Kalman_Graph->graph(2)->rescaleValueAxis(true);
 
-    ui->Accelerometer_Graph->graph(0)->rescaleValueAxis(true);
-    ui->Accelerometer_Graph->graph(1)->rescaleValueAxis(true);
-    ui->Accelerometer_Graph->graph(2)->rescaleValueAxis(true);
-
-    ui->Magnetometer_Graph->graph(0)->rescaleValueAxis(true);
-    ui->Magnetometer_Graph->graph(1)->rescaleValueAxis(true);
-    ui->Magnetometer_Graph->graph(2)->rescaleValueAxis(true);
-
-    ui->Filter_Graph->graph(0)->rescaleValueAxis(true);
-    ui->Filter_Graph->graph(1)->rescaleValueAxis(true);
-    ui->Filter_Graph->graph(2)->rescaleValueAxis(true);
+    ui->Madgwick_Graph->graph(0)->rescaleValueAxis(true);
+    ui->Madgwick_Graph->graph(1)->rescaleValueAxis(true);
+    ui->Madgwick_Graph->graph(2)->rescaleValueAxis(true);
 
     // make key axis range scroll with the data (at a constant range size of 8):
-    ui->Gyroscope_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
+    ui->Complementary_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
 
-    if( Gyroscope_Graph_Run == true ) {
+    if( Complementary_Graph_Run == true ) {
 
-        ui->Gyroscope_Graph->replot();
+        ui->Complementary_Graph->replot();
 
-        ui->lcdNumber_Gyroscope_X->display(Gyroscope_X);
-        ui->lcdNumber_Gyroscope_Y->display(Gyroscope_Y);
-        ui->lcdNumber_Gyroscope_Z->display(Gyroscope_Z);
+        ui->lcdNumber_Gyroscope_X->display(Complementary_Roll);
+        ui->lcdNumber_Gyroscope_Y->display(Complementary_Pitch);
+        ui->lcdNumber_Gyroscope_Z->display(Complementary_Yaw);
     }
 
-    ui->Filter_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
+    ui->Kalman_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
 
-    ui->Accelerometer_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
+    if( Kalman_Graph_Run == true ) {
 
-    if( Accelerometer_Graph_Run == true ) {
+        ui->Kalman_Graph->replot();
 
-        ui->Accelerometer_Graph->replot();
-
-        ui->lcdNumber_Accelerometer_X->display(Accelerometer_X);
-        ui->lcdNumber_Accelerometer_Y->display(Accelerometer_Y);
-        ui->lcdNumber_Accelerometer_Z->display(Accelerometer_Z);
+        ui->lcdNumber_Accelerometer_X->display(Kalman_Roll);
+        ui->lcdNumber_Accelerometer_Y->display(Kalman_Pitch);
+        ui->lcdNumber_Accelerometer_Z->display(Kalman_Yaw);
     }
 
-    ui->Accelerometer_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
+    ui->Kalman_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
 
-    ui->Magnetometer_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
+    ui->Madgwick_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
 
-    if( Magnetometer_Graph_Run == true ) {
+    if( Madgwick_Graph_Run == true ) {
 
-        ui->Magnetometer_Graph->replot();
+        ui->Madgwick_Graph->replot();
 
-        ui->lcdNumber_Magnetometer_X->display(Magnetometer_X);
-        ui->lcdNumber_Magnetometer_Y->display(Magnetometer_Y);
-        ui->lcdNumber_Magnetometer_Z->display(Magnetometer_Z);
+        ui->lcdNumber_Magnetometer_X->display(Madgwick_Roll);
+        ui->lcdNumber_Magnetometer_Y->display(Madgwick_Pitch);
+        ui->lcdNumber_Magnetometer_Z->display(Madgwick_Yaw);
     }
 
+    /*
     ui->Filter_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
 
     // OpenGL visualisation and plot
@@ -293,8 +262,8 @@ void MainWindow::MainWindow_Display_IMU_data()
 
         if(ui->checkBox_Filter_Roll->isChecked()) {
 
-            ui->lcdNumber_Filter_Roll->display(Filter_Roll);
-            ui->widget_RPY_Visualisation->setZRotation(Filter_Roll);
+            ui->lcdNumber_Filter_Roll->display(Complementary_Roll);
+            ui->widget_RPY_Visualisation->setZRotation(Complementary_Roll);
 
         } else{
             ui->lcdNumber_Filter_Roll->display(0);
@@ -303,8 +272,8 @@ void MainWindow::MainWindow_Display_IMU_data()
 
         if(ui->checkBox_Filter_Pitch->isChecked()) {
 
-            ui->widget_RPY_Visualisation->setXRotation(Filter_Pitch);
-            ui->lcdNumber_Filter_Pitch->display(Filter_Pitch);
+            ui->widget_RPY_Visualisation->setXRotation(Complementary_Pitch);
+            ui->lcdNumber_Filter_Pitch->display(Complementary_Pitch);
 
         } else {
 
@@ -314,8 +283,8 @@ void MainWindow::MainWindow_Display_IMU_data()
 
         if(ui->checkBox_Filter_Yaw->isChecked()) {
 
-            ui->widget_RPY_Visualisation->setYRotation(Filter_Yaw);
-            ui->lcdNumber_Filter_Yaw->display(Filter_Yaw);
+            ui->widget_RPY_Visualisation->setYRotation(Complementary_Yaw);
+            ui->lcdNumber_Filter_Yaw->display(Complementary_Yaw);
 
         } else {
 
@@ -325,6 +294,30 @@ void MainWindow::MainWindow_Display_IMU_data()
 
         ui->Filter_Graph->replot();
     }
+    */
+
+    ui->Complementary_Visualisation->setZRotation(Complementary_Roll);
+    ui->Complementary_Visualisation->setXRotation(Complementary_Pitch);
+    ui->Complementary_Visualisation->setYRotation(Complementary_Yaw);
+
+    ui->Kalman_Visualisation->setZRotation(Kalman_Roll);
+    ui->Kalman_Visualisation->setXRotation(Kalman_Pitch);
+    ui->Kalman_Visualisation->setYRotation(Kalman_Yaw);
+
+    ui->Madgwick_Visualisation->setZRotation(Madgwick_Roll);
+    ui->Madgwick_Visualisation->setXRotation(Madgwick_Pitch);
+    ui->Madgwick_Visualisation->setYRotation(Madgwick_Yaw);
+
+    // Print data frame
+
+    QString data_line = QString::number(data_iterator++) + " " +
+                        QTime::currentTime().toString() + " " +
+                        QString::number(Complementary_Roll) + " " + QString::number(Complementary_Pitch) + " " + QString::number(Complementary_Yaw) + " " +
+                        QString::number(Kalman_Roll) + " " + QString::number(Kalman_Pitch) + " " + QString::number(Kalman_Yaw) + " " +
+                        QString::number(Madgwick_Roll) + " " + QString::number(Madgwick_Pitch) + " " + QString::number(Madgwick_Yaw) + " " + "\n";
+
+    ui->textBrowser_Data->append(data_line);
+    Data_lines.push_back(data_line);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -351,23 +344,8 @@ void MainWindow::loadSettings()
     QSettings settings(m_sSettingsFile);
 
     double Complementary_weight = settings.value("Complementary_weight").toDouble();
-    int Process_variance = settings.value("ProcessVariance").toInt();
-    int Measure_variance = settings.value("MeasureVariance").toInt();
-    double Madgwick_beta = settings.value("Madgwick_beta").toDouble();
-
-    int Which_filter = settings.value("Which_filter").toInt();
 
     settings.setValue("Complementary_weight", Complementary_weight);
-
-    ui->doubleSpinBox_Complementary_filter_weight->setValue(Complementary_weight);
-    ui->doubleSpinBox_Kalman_filter_process_variance->setValue(Process_variance);
-    ui->doubleSpinBox_Kalman_filter_measure_variance->setValue(Measure_variance);
-    ui->doubleSpinBox_Madgwick_beta->setValue(Madgwick_beta);
-
-    if( Which_filter == 0 )      ui->radioButton_Complementary_filter->setChecked(true);
-    else if( Which_filter == 1 ) ui->radioButton_Kalman_filter->setChecked(true);
-    else if( Which_filter == 2 ) ui->radioButton_Madgwick_filter->setChecked(true);
-    else if( Which_filter == 3 ) ui->radioButton_Mahony_filter->setChecked(true);
 
     /*
     qDebug() << "Wczytano PID_Kp: " << PID_Kp;
@@ -392,25 +370,6 @@ void MainWindow::saveSettings()
 {
     QSettings settings(m_sSettingsFile);
 
-    double Complementary_weight = ui->doubleSpinBox_Complementary_filter_weight->value();
-    int Kalman_filter_process_variance = static_cast<int>( ui->doubleSpinBox_Kalman_filter_process_variance->value() );
-    int Kalman_filter_measure_variance = static_cast<int>( ui->doubleSpinBox_Kalman_filter_measure_variance->value() );
-    double Madgwick_beta = ui->doubleSpinBox_Madgwick_beta->value();
-
-    int Which_filter = 0;
-
-    if( ui->radioButton_Complementary_filter->isChecked() ) Which_filter = 0;
-    else if(ui->radioButton_Kalman_filter->isChecked() )    Which_filter = 1;
-    else if(ui->radioButton_Madgwick_filter->isChecked() )  Which_filter = 2;
-    else if(ui->radioButton_Mahony_filter->isChecked() )    Which_filter = 3;
-
-    settings.setValue("Complementary_weight", Complementary_weight);
-    settings.setValue("ProcessVariance", Kalman_filter_process_variance);
-    settings.setValue("MeasureVariance", Kalman_filter_measure_variance);
-    settings.setValue("Madgwick_beta", Madgwick_beta);
-
-    settings.setValue("Which_filter", Which_filter);
-
     /*
     qDebug() << "Zapisano PID_Kp: "                 << PID_Kp;
     qDebug() << "Zapisano PID_Ki: "                 << PID_Ki;
@@ -424,29 +383,6 @@ void MainWindow::saveSettings()
     qDebug() << "Zapisano Which_filter: "           << Which_filter;
     qDebug() << "Zapisano Set_Speed: "              << Set_speed;
     */
-}
-
-// ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void MainWindow::MainWindow_Default_View()
-{
-   if(Show_Gyroscope_X == true) ui->checkBox_Gyroscope_X->setChecked(true);
-   if(Show_Gyroscope_Y == true) ui->checkBox_Gyroscope_Y->setChecked(true);
-   if(Show_Gyroscope_Z == true) ui->checkBox_Gyroscope_Z->setChecked(true);
-
-   if(Show_Accelerometer_X == true) ui->checkBox_Accelerometer_X->setChecked(true);
-   if(Show_Accelerometer_Y == true) ui->checkBox_Accelerometer_Y->setChecked(true);
-   if(Show_Accelerometer_Z == true) ui->checkBox_Accelerometer_Z->setChecked(true);
-
-   if(Show_Magnetometer_X == true) ui->checkBox_Magnetometer_X->setChecked(true);
-   if(Show_Magnetometer_Y == true) ui->checkBox_Magnetometer_Y->setChecked(true);
-   if(Show_Magnetometer_Z == true) ui->checkBox_Magnetometer_Z->setChecked(true);
-
-   if(Show_Filter_Roll  == true) ui->checkBox_Filter_Roll->setChecked(true);
-   if(Show_Filter_Pitch == true) ui->checkBox_Filter_Pitch->setChecked(true);
-   if(Show_Filter_Yaw   == true) ui->checkBox_Filter_Yaw->setChecked(true);
-
-   ui->pushButton_Plots_Start_Stop->setText("Stop");
 }
 
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -517,61 +453,6 @@ void MainWindow::MainWindow_Setup_Icons()
     w = ui->label_Magnetometer_Z->width();
     h = ui->label_Magnetometer_Z->height();
     ui->label_Magnetometer_Z->setPixmap( Blue_dot.scaled(w, h, Qt::KeepAspectRatio) );
-
-    // Filter RGB dots
-    w = ui->label_Filter_Roll->width();
-    h = ui->label_Filter_Roll->height();
-    ui->label_Filter_Roll->setPixmap( Red_dot.scaled(w, h, Qt::KeepAspectRatio) );
-
-    w = ui->label_Filter_Pitch->width();
-    h = ui->label_Filter_Pitch->height();
-    ui->label_Filter_Pitch->setPixmap( Green_dot.scaled(w, h, Qt::KeepAspectRatio) );
-
-    w = ui->label_Filter_Yaw->width();
-    h = ui->label_Filter_Yaw->height();
-    ui->label_Filter_Yaw->setPixmap( Blue_dot.scaled(w, h, Qt::KeepAspectRatio) );
-}
-
-// ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void MainWindow::on_checkBox_Filter_Roll_clicked()
-{
-    if( ui->checkBox_Filter_Roll->isChecked() ) {
-
-        Show_Filter_Roll = true;
-    }
-    else {
-
-        Show_Filter_Roll = false;
-    }
-}
-
-// ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void MainWindow::on_checkBox_Filter_Pitch_clicked()
-{
-    if( ui->checkBox_Filter_Pitch->isChecked() ) {
-
-        Show_Filter_Pitch = true;
-    }
-    else {
-
-        Show_Filter_Pitch = false;
-    }
-}
-
-// ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void MainWindow::on_checkBox_Filter_Yaw_clicked()
-{
-    if( ui->checkBox_Filter_Yaw->isChecked() ) {
-
-        Show_Filter_Yaw = true;
-    }
-    else {
-
-        Show_Filter_Yaw = false;
-    }
 }
 
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -580,21 +461,6 @@ void MainWindow::on_pushButton_ConnectDisconnect_clicked()
 {
     this->hide();
     emit Disconnect_Signal();
-}
-
-// ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void MainWindow::on_pushButton_Send_clicked()
-{
-    // Filters data
-    Data_to.Complementary_filter_weight = ui->doubleSpinBox_Complementary_filter_weight->value();
-    Data_to.Kalman_procces_variance = ui->doubleSpinBox_Kalman_filter_process_variance->value();
-    Data_to.Kalman_measure_variance = ui->doubleSpinBox_Kalman_filter_measure_variance->value();
-    Data_to.Madgwick_filter_beta = ui->doubleSpinBox_Madgwick_beta->value();
-
-    CW->Fill_Data_to_robot(Data_to);
-
-    emit Send_data_Signal();
 }
 
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -621,48 +487,6 @@ void MainWindow::on_doubleSpinBox_Complementary_filter_weight_valueChanged(doubl
 {
     arg1 = 0;
     saveSettings();
-}
-
-// ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void MainWindow::on_pushButton_Plots_Center_clicked()
-{
-    ui->splitter->setSizes( Splitter_Position );
-    ui->splitter->update();
-    ui->splitter->showMaximized();
-}
-
-// ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void MainWindow::on_pushButton_Plots_Start_Stop_clicked()
-{
-
-    if( ui->pushButton_Plots_Start_Stop->text() == "Start" ) {
-
-        ui->pushButton_Plots_Start_Stop->setText("Stop");
-    }
-    else {
-
-        ui->pushButton_Plots_Start_Stop->setText("Start");
-    }
-
-    if(Filter_Graph_Run == true) {
-
-        Filter_Graph_Run = false;
-    }
-    else {
-
-        Filter_Graph_Run = true;
-    }
-}
-
-// ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void MainWindow::on_pushButton_Reset_Plots_Range_clicked()
-{
-    ui->Filter_Graph->clearGraphs();
-
-    MainWindow_Setup_Filter_Graph();
 }
 
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -861,6 +685,36 @@ void MainWindow::on_doubleSpinBox_Kalman_filter_measure_variance_valueChanged(do
 {
     Data_to.Kalman_measure_variance = static_cast<int>(arg1);
     saveSettings();
+}
+
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+void MainWindow::on_pushButton_Data_Clear_clicked()
+{
+    ui->textBrowser_Data->clear();
+    Data_lines.clear();
+    data_iterator = 1;
+}
+
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+void MainWindow::on_pushButton_Data_Save_clicked()
+{
+    std::fstream file("data.txt", std::ios::in | std::ios::out );
+
+    if(file.good()) {
+
+        int size_list = Data_lines.length();
+
+        for(int i = 1; i < size_list; i++) {
+
+            qDebug() << Data_lines.at(i);
+            file << Data_lines.at(i).toStdString();
+            file.flush();
+        }
+
+        file.close();
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
