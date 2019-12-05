@@ -181,18 +181,6 @@ void MainWindow::MainWindow_Display_IMU_data()
     double Madgwick_Pitch = Data_from.Madgwick_pitch;
     double Madgwick_Yaw   = Data_from.Madgwick_yaw;
 
-    double Gyroscope_X = Data_from.g_x_dgs;
-    double Gyroscope_Y = Data_from.g_y_dgs;
-    double Gyroscope_Z = Data_from.g_z_dgs;
-
-    double Accelerometer_X = Data_from.a_x_g;
-    double Accelerometer_Y = Data_from.a_y_g;
-    double Accelerometer_Z = Data_from.a_z_g;
-
-    double Magnetometer_X = Data_from.m_x_uT;
-    double Magnetometer_Y = Data_from.m_y_uT;
-    double Magnetometer_Z = Data_from.m_z_uT;
-
     // add data to lines:
     if(Show_Gyroscope_X == true) ui->Complementary_Graph->graph(0)->addData(key, Complementary_Roll);
     if(Show_Gyroscope_Y == true) ui->Complementary_Graph->graph(1)->addData(key, Complementary_Pitch);
@@ -254,64 +242,36 @@ void MainWindow::MainWindow_Display_IMU_data()
         ui->lcdNumber_Magnetometer_Z->display(Madgwick_Yaw);
     }
 
-    /*
-    ui->Filter_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
-
-    // OpenGL visualisation and plot
-    if(Filter_Graph_Run == true) {
-
-        if(ui->checkBox_Filter_Roll->isChecked()) {
-
-            ui->lcdNumber_Filter_Roll->display(Complementary_Roll);
-            ui->widget_RPY_Visualisation->setZRotation(Complementary_Roll);
-
-        } else{
-            ui->lcdNumber_Filter_Roll->display(0);
-            ui->widget_RPY_Visualisation->setZRotation(0);
-        }
-
-        if(ui->checkBox_Filter_Pitch->isChecked()) {
-
-            ui->widget_RPY_Visualisation->setXRotation(Complementary_Pitch);
-            ui->lcdNumber_Filter_Pitch->display(Complementary_Pitch);
-
-        } else {
-
-            ui->lcdNumber_Filter_Pitch->display(0);
-            ui->widget_RPY_Visualisation->setXRotation(0);
-        }
-
-        if(ui->checkBox_Filter_Yaw->isChecked()) {
-
-            ui->widget_RPY_Visualisation->setYRotation(Complementary_Yaw);
-            ui->lcdNumber_Filter_Yaw->display(Complementary_Yaw);
-
-        } else {
-
-            ui->lcdNumber_Filter_Yaw->display(0);
-            ui->widget_RPY_Visualisation->setYRotation(0);
-        }
-
-        ui->Filter_Graph->replot();
-    }
-    */
-
     ui->Complementary_Visualisation->setZRotation(Complementary_Roll);
     ui->Complementary_Visualisation->setXRotation(Complementary_Pitch);
     ui->Complementary_Visualisation->setYRotation(Complementary_Yaw);
+
+    ui->lcdNumber_Complementary_Roll->display(Complementary_Roll);
+    ui->lcdNumber_Complementary_Pitch->display(Complementary_Pitch);
+    ui->lcdNumber_Complementary_Yaw->display(Complementary_Yaw);
 
     ui->Kalman_Visualisation->setZRotation(Kalman_Roll);
     ui->Kalman_Visualisation->setXRotation(Kalman_Pitch);
     ui->Kalman_Visualisation->setYRotation(Kalman_Yaw);
 
+    ui->lcdNumber_Kalman_Roll->display(Kalman_Roll);
+    ui->lcdNumber_Kalman_Pitch->display(Kalman_Pitch);
+    ui->lcdNumber_Kalman_Yaw->display(Kalman_Yaw);
+
     ui->Madgwick_Visualisation->setZRotation(Madgwick_Roll);
     ui->Madgwick_Visualisation->setXRotation(Madgwick_Pitch);
     ui->Madgwick_Visualisation->setYRotation(Madgwick_Yaw);
 
-    // Print data frame
+    ui->lcdNumber_Madgwick_Roll->display(Madgwick_Roll);
+    ui->lcdNumber_Madgwick_Pitch->display(Madgwick_Pitch);
+    ui->lcdNumber_Madgwick_Yaw->display(Madgwick_Yaw);
 
-    QString data_line = QString::number(data_iterator++) + " " +
+    //data_time = QTime::currentTime();
+
+    // Print data frame
+    QString data_line = QString::number(++data_iterator) + " " +
                         QTime::currentTime().toString() + " " +
+                        QString::number(data_time.elapsed()) + " " +
                         QString::number(Complementary_Roll) + " " + QString::number(Complementary_Pitch) + " " + QString::number(Complementary_Yaw) + " " +
                         QString::number(Kalman_Roll) + " " + QString::number(Kalman_Pitch) + " " + QString::number(Kalman_Yaw) + " " +
                         QString::number(Madgwick_Roll) + " " + QString::number(Madgwick_Pitch) + " " + QString::number(Madgwick_Yaw) + " " + "\n";
@@ -693,20 +653,21 @@ void MainWindow::on_pushButton_Data_Clear_clicked()
 {
     ui->textBrowser_Data->clear();
     Data_lines.clear();
-    data_iterator = 1;
+    data_iterator = 0;
+    data_time.restart();
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 void MainWindow::on_pushButton_Data_Save_clicked()
 {
-    std::fstream file("data.txt", std::ios::in | std::ios::out );
+    std::fstream file("data.txt", std::ios::out | std::ios::trunc);
 
-    if(file.good()) {
+    if( file.good() ) {
 
         int size_list = Data_lines.length();
 
-        for(int i = 1; i < size_list; i++) {
+        for(int i = 0; i < size_list; i++) {
 
             qDebug() << Data_lines.at(i);
             file << Data_lines.at(i).toStdString();
@@ -714,6 +675,10 @@ void MainWindow::on_pushButton_Data_Save_clicked()
         }
 
         file.close();
+    }
+    else {
+
+        qDebug() << "Nie mozna utworzyc pliku !";
     }
 }
 

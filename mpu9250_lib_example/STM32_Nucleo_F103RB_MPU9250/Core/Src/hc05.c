@@ -76,8 +76,11 @@ void HC05_Fill_Data_frame_to_PC(struct Data_frame_to_PC *_data, uint8_t *_frame,
 	_frame[16] = HC05_Divide_int16(Madgwick_Yaw * 100, 'L');
 	_frame[17] = HC05_Divide_int16(Madgwick_Yaw * 100, 'H');
 
+	_frame[18] = HC05_Divide_int16(32768, 'L');
+	_frame[19] = HC05_Divide_int16(32768, 'H');
+
 	/* CRC */
-	_frame[18] = CRC8_DataArray(_frame, DATA_FRAME_TO_PC_SIZE - 1);
+	_frame[20] = CRC8_DataArray(_frame, DATA_FRAME_TO_PC_SIZE - 1);
 }
 
 /* --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */

@@ -180,7 +180,10 @@ void Bluetooth::Receive_frame()
         int8_t CRC_received = Data_frame_from_robot[DATA_FRAME_FROM_ROBOT_SIZE - 1];
         int8_t CRC_actual = CRC8_DataArray(Data_frame_from_robot, DATA_FRAME_FROM_ROBOT_SIZE - 1);
 
-        if( CRC_actual == CRC_received && CRC_received != 0 ) {
+        int16_t test_int = Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[18]),
+                                       static_cast<uint8_t>(Data_frame_from_robot[19]) );
+
+        if( CRC_actual == CRC_received && CRC_received != 0 && test_int == -32768) {
 
             Parse_data_frame();
             TimeoutTimer->start(2000);

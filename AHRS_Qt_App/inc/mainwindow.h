@@ -88,7 +88,8 @@ private:
 
     //QList<int> Splitter_Position;
     QList<QString> Data_lines;
-    int data_iterator = 1;
+    int data_iterator = 0;
+    QTime data_time = QTime::currentTime();
 
 private slots:
 

@@ -10,7 +10,7 @@ mpu9250.c:363:6:MPU9250_Calibration_Gyro	32	static
 mpu9250.c:384:6:MPU9250_Calibration_Mag	64	static
 mpu9250.c:429:6:MPU9250_Set_Offsets	24	static
 mpu9250.c:462:6:MPU9250_Calculate_RPY	72	static
-mpu9250.c:514:6:Complementary_filter	32	static
-mpu9250.c:525:6:Kalman_filter	48	static
-mpu9250.c:547:6:Madgwick_filter	72	static
-mpu9250.c:563:6:Mahony_filter	80	static
+mpu9250.c:516:6:Complementary_filter	32	static
+mpu9250.c:552:6:Kalman_filter	48	static
+mpu9250.c:575:6:Madgwick_filter	80	static
+mpu9250.c:591:6:Mahony_filter	80	static

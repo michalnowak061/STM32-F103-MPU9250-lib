@@ -510,28 +510,56 @@ void MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
+int flag_global = 0;
+float Complementary_filter_Yaw_past = 0;
 
 void Complementary_filter(struct MPU9250 *DataStructure,
-						  float weight,
+						  float weight_Roll_Pitch,
+						  float weight_Yaw,
 						  float dt) {
 
-	DataStructure->Complementary_filter_Roll   = ( (1-weight) * (DataStructure->Complementary_filter_Roll  + DataStructure->Gyroscope_X_dgs * dt ) + (weight * DataStructure->Accelerometer_Roll)  );
-	DataStructure->Complementary_filter_Pitch  = ( (1-weight) * (DataStructure->Complementary_filter_Pitch + DataStructure->Gyroscope_Y_dgs * dt ) + (weight * DataStructure->Accelerometer_Pitch) );
-	DataStructure->Complementary_filter_Yaw    = ( (1-weight) * (DataStructure->Complementary_filter_Yaw   + DataStructure->Gyroscope_Z_dgs * dt ) + (weight * DataStructure->Magnetometer_Yaw)    );
+	DataStructure->Complementary_filter_Roll   = ( (1-weight_Roll_Pitch) * (DataStructure->Complementary_filter_Roll  + DataStructure->Gyroscope_X_dgs * dt )
+			                                   + (weight_Roll_Pitch * DataStructure->Accelerometer_Roll)  );
+
+	DataStructure->Complementary_filter_Pitch  = ( (1-weight_Roll_Pitch) * (DataStructure->Complementary_filter_Pitch + DataStructure->Gyroscope_Y_dgs * dt )
+											   + (weight_Roll_Pitch * DataStructure->Accelerometer_Pitch) );
+
+	DataStructure->Complementary_filter_Yaw    = ( (1-weight_Yaw) * (DataStructure->Complementary_filter_Yaw   + DataStructure->Gyroscope_Z_dgs * dt )
+											   + (weight_Yaw * DataStructure->Magnetometer_Yaw)    );
+
+
+	if( DataStructure->Complementary_filter_Roll >= 170 && flag_global == 0 ) {
+
+		DataStructure->Complementary_filter_Roll = -179;
+		flag_global = 1;
+	}
+
+	flag_global = 0;
+	/*
+	if( DataStructure->Complementary_filter_Roll <= -170 && flag_global == 1 ) {
+
+		DataStructure->Complementary_filter_Roll = 179;
+		flag_global = 0;
+	}
+	*/
+
+	//flag_global = 0;
+	//Complementary_filter_Yaw_past = DataStructure->Complementary_filter_Yaw;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
 
 void Kalman_filter(struct MPU9250 *DataStructure,
-				   float Q, float R,
+				   float Q_Roll_Pitch, float R_Roll_Pitch,
+				   float Q_Yaw, float R_Yaw,
 				   float dt) {
 
 	/* Case 1: Update Q and R value */
-	if( DataStructure->Kalman_P.kalman_Q != Q || DataStructure->Kalman_P.kalman_R != R ) {
+	if( DataStructure->Kalman_P.kalman_Q != Q_Roll_Pitch || DataStructure->Kalman_P.kalman_R != R_Roll_Pitch ) {
 
-		Kalman_filter_init(&DataStructure->Kalman_P, Q, R);
-		Kalman_filter_init(&DataStructure->Kalman_Y, Q, R);
-		Kalman_filter_init(&DataStructure->Kalman_R, Q, R);
+		Kalman_filter_init(&DataStructure->Kalman_R, Q_Roll_Pitch, R_Roll_Pitch);
+		Kalman_filter_init(&DataStructure->Kalman_P, Q_Roll_Pitch, R_Roll_Pitch);
+		Kalman_filter_init(&DataStructure->Kalman_Y, Q_Yaw, R_Yaw);
 
 		return;
 	}
@@ -548,7 +576,7 @@ void Madgwick_filter(struct MPU9250 *DataStructure,
 					 float beta,
 					 float dt) {
 
-	MadgwickAHRSupdate(/*1,*/
+	MadgwickAHRSupdate(beta,
 					   DataStructure->Gyroscope_X_dgs * (M_PI / 180), DataStructure->Gyroscope_Y_dgs * (M_PI / 180), DataStructure->Gyroscope_Z_dgs * (M_PI / 180),
 					   DataStructure->Accelerometer_X_g, DataStructure->Accelerometer_Y_g, DataStructure->Accelerometer_Z_g,
 					   DataStructure->Magnetometer_X_uT, DataStructure->Magnetometer_Y_uT, DataStructure->Magnetometer_Z_uT,
