@@ -1,0 +1,6 @@
+quaternion.c:10:6:quaternion_init	16	static
+quaternion.c:18:6:euler_init	16	static
+quaternion.c:25:19:quaternion_tensor_product	72	static
+quaternion.c:37:6:quaternion_normalise	32	static
+quaternion.c:47:6:quaternion_to_matrix	32	static
+quaternion.c:62:6:matrix_to_euler	48	static

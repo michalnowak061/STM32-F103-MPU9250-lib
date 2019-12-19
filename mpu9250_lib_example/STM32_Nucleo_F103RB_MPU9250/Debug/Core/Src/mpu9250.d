@@ -23,7 +23,8 @@ Core/Src/mpu9250.o: ../Core/Src/mpu9250.c ../Core/Inc/mpu9250.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h \
- ../Core/Inc/kalman.h ../Core/Inc/MadgwickAHRS.h ../Core/Inc/MahonyAHRS.h
+ ../Core/Inc/quaternion.h ../Core/Inc/kalman.h ../Core/Inc/MadgwickAHRS.h \
+ ../Core/Inc/MahonyAHRS.h
 
 ../Core/Inc/mpu9250.h:
 
@@ -76,6 +77,8 @@ Core/Src/mpu9250.o: ../Core/Src/mpu9250.c ../Core/Inc/mpu9250.h \
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h:
 
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h:
+
+../Core/Inc/quaternion.h:
 
 ../Core/Inc/kalman.h:
 

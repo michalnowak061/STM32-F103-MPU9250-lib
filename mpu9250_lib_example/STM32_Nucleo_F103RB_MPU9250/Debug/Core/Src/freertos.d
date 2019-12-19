@@ -40,8 +40,9 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h \
  ../Core/Inc/mpu9250.h ../Core/Inc/i2c.h ../Core/Inc/main.h \
- ../Core/Inc/kalman.h ../Core/Inc/MadgwickAHRS.h ../Core/Inc/MahonyAHRS.h \
- ../Core/Inc/hc05.h ../Core/Inc/usart.h ../Core/Inc/crc.h
+ ../Core/Inc/quaternion.h ../Core/Inc/kalman.h ../Core/Inc/MadgwickAHRS.h \
+ ../Core/Inc/MahonyAHRS.h ../Core/Inc/hc05.h ../Core/Inc/usart.h \
+ ../Core/Inc/crc.h
 
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 
@@ -130,6 +131,8 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
 ../Core/Inc/i2c.h:
 
 ../Core/Inc/main.h:
+
+../Core/Inc/quaternion.h:
 
 ../Core/Inc/kalman.h:
 

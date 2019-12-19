@@ -245,6 +245,11 @@ MPU9250_Error_code MPU9250_Init(I2C_HandleTypeDef *I2Cx,
 		return MPU9250_Magnetometer_Config_FAIL;
 	}
 
+	/* Case 7: Default values of variables */
+
+	quaternion_init( &(DataStructure->Gyroscope_quaternion) );
+	euler_init( &(DataStructure->Gyroscope_euler) );
+
 	return MPU9250_Init_OK;
 }
 
@@ -289,9 +294,9 @@ MPU9250_Error_code MPU9250_Read_Gyroscope(I2C_HandleTypeDef *I2Cx,
 	DataStructure->Gyroscope_Z = ( Bytes_temp[4] << 8 | Bytes_temp[5] ) - DataStructure->Gyroscope_Z_offset;
 
 	/* Case x: Calculate dgs/s values for XYZ axis */
-	DataStructure->Gyroscope_X_dgs =  (float)(DataStructure->Gyroscope_X) / DataStructure->Gyroscope_sensitivity_factor;
-	DataStructure->Gyroscope_Y_dgs =  (float)(DataStructure->Gyroscope_Y) / DataStructure->Gyroscope_sensitivity_factor;
-	DataStructure->Gyroscope_Z_dgs =  (float)(DataStructure->Gyroscope_Z) / DataStructure->Gyroscope_sensitivity_factor;
+	DataStructure->Gyroscope_X_dgs =  (double)(DataStructure->Gyroscope_X) / DataStructure->Gyroscope_sensitivity_factor;
+	DataStructure->Gyroscope_Y_dgs =  (double)(DataStructure->Gyroscope_Y) / DataStructure->Gyroscope_sensitivity_factor;
+	DataStructure->Gyroscope_Z_dgs =  (double)(DataStructure->Gyroscope_Z) / DataStructure->Gyroscope_sensitivity_factor;
 
 	return MPU9250_Read_Gyroscope_OK;
 }
@@ -363,7 +368,7 @@ void MPU9250_Calibration_Acce(I2C_HandleTypeDef *I2Cx,
 void MPU9250_Calibration_Gyro(I2C_HandleTypeDef *I2Cx,
 	      	  	  	  	  	  	  	        struct MPU9250 *DataStructure) {
 
-	float Gyro_X_offset = 0, Gyro_Y_offset = 0, Gyro_Z_offset = 0;
+	double Gyro_X_offset = 0, Gyro_Y_offset = 0, Gyro_Z_offset = 0;
 
 	for (int i = 0; i < 1000; ++i) {
 
@@ -422,6 +427,8 @@ void MPU9250_Calibration_Mag(I2C_HandleTypeDef *I2Cx,
 	DataStructure->Magnetometer_X_scale = delta / delta_x;
 	DataStructure->Magnetometer_Y_scale = delta / delta_y;
 	DataStructure->Magnetometer_Z_scale = delta / delta_z;
+
+
 }
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
@@ -461,7 +468,7 @@ float r11p = 1, r12p = 0, r13p = 0,
 
 void MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
 	      	  	  	  	  	  	  		 struct MPU9250 *DataStructure,
-										 float dt) {
+										 double dt) {
 
 	/* Case 1: */
 	MPU9250_Read_Accelerometer(I2Cx, DataStructure);
@@ -507,12 +514,36 @@ void MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
 	float Y_h = m_y * cosf(Roll)  - m_z * sinf(Roll);
 
 	DataStructure->Magnetometer_Yaw = atan2f(-Y_h, X_h) * (180 / M_PI);
+
+	/* Case x: Gyroscope calculate Quaternion */
+	struct quaternion temp_quaternion;
+	temp_quaternion.w = 0.5 * DataStructure->Gyroscope_quaternion.w;
+	temp_quaternion.x = 0.5 * DataStructure->Gyroscope_quaternion.x;
+	temp_quaternion.y = 0.5 * DataStructure->Gyroscope_quaternion.y;
+	temp_quaternion.z = 0.5 * DataStructure->Gyroscope_quaternion.z;
+
+	struct quaternion gyroscope_vector;
+	gyroscope_vector.w = 0;
+	gyroscope_vector.x = DataStructure->Gyroscope_X_dgs * (M_PI / 180);
+	gyroscope_vector.y = DataStructure->Gyroscope_Y_dgs * (M_PI / 180);
+	gyroscope_vector.z = DataStructure->Gyroscope_Z_dgs * (M_PI / 180);
+
+	DataStructure->Gyroscope_quaternion_dot = quaternion_tensor_product(&temp_quaternion, &gyroscope_vector);
+
+	DataStructure->Gyroscope_quaternion.w = DataStructure->Gyroscope_quaternion.w + (DataStructure->Gyroscope_quaternion_dot.w * dt);
+	DataStructure->Gyroscope_quaternion.x = DataStructure->Gyroscope_quaternion.x + (DataStructure->Gyroscope_quaternion_dot.x * dt);
+	DataStructure->Gyroscope_quaternion.y = DataStructure->Gyroscope_quaternion.y + (DataStructure->Gyroscope_quaternion_dot.y * dt);
+	DataStructure->Gyroscope_quaternion.z = DataStructure->Gyroscope_quaternion.z + (DataStructure->Gyroscope_quaternion_dot.z * dt);
+
+	quaternion_normalise(&DataStructure->Gyroscope_quaternion);
+
+	struct rot_matrix gyroscope_matrix;
+	quaternion_to_matrix(&DataStructure->Gyroscope_quaternion, &gyroscope_matrix);
+
+	matrix_to_euler(&gyroscope_matrix, &DataStructure->Gyroscope_euler);
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
-int flag_global = 0;
-float Complementary_filter_Yaw_past = 0;
-
 void Complementary_filter(struct MPU9250 *DataStructure,
 						  float weight_Roll_Pitch,
 						  float weight_Yaw,
@@ -526,25 +557,6 @@ void Complementary_filter(struct MPU9250 *DataStructure,
 
 	DataStructure->Complementary_filter_Yaw    = ( (1-weight_Yaw) * (DataStructure->Complementary_filter_Yaw   + DataStructure->Gyroscope_Z_dgs * dt )
 											   + (weight_Yaw * DataStructure->Magnetometer_Yaw)    );
-
-
-	if( DataStructure->Complementary_filter_Roll >= 170 && flag_global == 0 ) {
-
-		DataStructure->Complementary_filter_Roll = -179;
-		flag_global = 1;
-	}
-
-	flag_global = 0;
-	/*
-	if( DataStructure->Complementary_filter_Roll <= -170 && flag_global == 1 ) {
-
-		DataStructure->Complementary_filter_Roll = 179;
-		flag_global = 0;
-	}
-	*/
-
-	//flag_global = 0;
-	//Complementary_filter_Yaw_past = DataStructure->Complementary_filter_Yaw;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */

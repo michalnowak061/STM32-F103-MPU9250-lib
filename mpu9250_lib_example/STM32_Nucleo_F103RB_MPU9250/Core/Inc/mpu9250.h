@@ -11,6 +11,8 @@
 #include "i2c.h"
 #include "math.h"
 
+#include "quaternion.h"
+
 #include "kalman.h"
 #include "MadgwickAHRS.h"
 #include "MahonyAHRS.h"
@@ -226,28 +228,33 @@ struct MPU9250 {
 	float Magnetic_declination;
 
 	int16_t Accelerometer_sensitivity_factor;
-	int16_t Gyroscope_sensitivity_factor;
 	float Magnetometer_sesitivity_factor;
 	float Magnetometer_ASAX, Magnetometer_ASAY, Magnetometer_ASAZ;
 
 	int16_t Accelerometer_X, Accelerometer_Y, Accelerometer_Z;
-	int16_t Gyroscope_X, Gyroscope_Y, Gyroscope_Z;
 	int16_t Magnetometer_X, Magnetometer_Y, Magnetometer_Z;
 
 	float Accelerometer_X_offset, Accelerometer_Y_offset, Accelerometer_Z_offset;
-	float Gyroscope_X_offset, Gyroscope_Y_offset, Gyroscope_Z_offset;
 	float Magnetometer_X_offset, Magnetometer_Y_offset, Magnetometer_Z_offset;
 	float Magnetometer_X_scale, Magnetometer_Y_scale, Magnetometer_Z_scale;
 	float Magnetometer_Yaw_offset;
 
 	float Accelerometer_X_g, Accelerometer_Y_g, Accelerometer_Z_g;
-	float Gyroscope_X_dgs, Gyroscope_Y_dgs, Gyroscope_Z_dgs;
-	float Gyroscope_X_dgs_past, Gyroscope_Y_dgs_past, Gyroscope_Z_dgs_past;
 	float Magnetometer_X_uT,  Magnetometer_Y_uT,  Magnetometer_Z_uT;
 
 	float Accelerometer_Roll, Accelerometer_Pitch;
 	float Gyroscope_Roll, Gyroscope_Pitch, Gyroscope_Yaw;
 	float Magnetometer_Roll, Magnetometer_Pitch, Magnetometer_Yaw;
+
+	/* Gyroscope variables */
+	int16_t Gyroscope_sensitivity_factor;
+	int16_t Gyroscope_X, Gyroscope_Y, Gyroscope_Z;
+	double Gyroscope_X_dgs, Gyroscope_Y_dgs, Gyroscope_Z_dgs;
+	double Gyroscope_X_offset, Gyroscope_Y_offset, Gyroscope_Z_offset;
+	struct quaternion Gyroscope_quaternion;
+	struct quaternion Gyroscope_quaternion_dot;
+	struct euler Gyroscope_euler;
+
 
 	/* Complementary filter variables */
 	float Complementary_filter_Roll, Complementary_filter_Pitch, Complementary_filter_Yaw;
@@ -332,7 +339,7 @@ void MPU9250_Set_Offsets(I2C_HandleTypeDef *I2Cx,
 
 void MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
 	      	  	  	  	  	  	  		 struct MPU9250 *DataStructure,
-										 float dt);
+										 double dt);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 

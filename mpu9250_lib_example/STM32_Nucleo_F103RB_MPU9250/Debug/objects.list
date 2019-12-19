@@ -9,6 +9,7 @@
 "Core/Src/kalman.o"
 "Core/Src/main.o"
 "Core/Src/mpu9250.o"
+"Core/Src/quaternion.o"
 "Core/Src/stm32f1xx_hal_msp.o"
 "Core/Src/stm32f1xx_it.o"
 "Core/Src/sys.o"

@@ -38,13 +38,13 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define COMPLEMENTARY_FILTER_WEIGHT_RP 0.05
-#define COMPLEMENTARY_FILTER_WEIGHT_Y  0.005
-#define KALMAN_PROCESS_VARIANCE_RP		0.1
-#define KALMAN_MEASURE_VARIANCE_RP		100
-#define KALMAN_PROCESS_VARIANCE_Y		0.001
-#define KALMAN_MEASURE_VARIANCE_Y		10000
-#define MADGWICK_BETA					0.5
+#define COMPLEMENTARY_FILTER_WEIGHT_RP 0.03
+#define COMPLEMENTARY_FILTER_WEIGHT_Y  0.02
+#define KALMAN_PROCESS_VARIANCE_RP		0.3
+#define KALMAN_MEASURE_VARIANCE_RP		300
+#define KALMAN_PROCESS_VARIANCE_Y		0.04
+#define KALMAN_MEASURE_VARIANCE_Y		400
+#define MADGWICK_BETA					0.2
 
 /* USER CODE END PD */
 
@@ -82,7 +82,7 @@ float Kalman_filter_process_variance_Y = KALMAN_PROCESS_VARIANCE_Y;
 float Kalman_filter_measure_variance_Y = KALMAN_MEASURE_VARIANCE_Y;
 float Madgwick_filter_beta = MADGWICK_BETA;
 
-float dt = 0;
+double dt = 0;
 
 /* -----------> Communication variables <----------- */
 UART_HandleTypeDef *HC05_handle = &huart1;
@@ -185,9 +185,9 @@ void Start_USART_Task(void const *argument) {
 	for (;;) {
 
 		HC05_Fill_Data_frame_to_PC(&DT_PC, Data_to_PC,
-				Complementary_Roll_global, Complementary_Pitch_global, /*Complementary_Yaw_global*/0,
-				Kalman_Roll_global, Kalman_Pitch_global, /*Kalman_Yaw_global*/0,
-				Madgwick_Roll_global, Madgwick_Pitch_global, /*Madgwick_Yaw_global*/0);
+				Complementary_Roll_global, Complementary_Pitch_global, Complementary_Yaw_global,
+				Kalman_Roll_global, Kalman_Pitch_global,Kalman_Yaw_global,
+				Madgwick_Roll_global, Madgwick_Pitch_global,Madgwick_Yaw_global);
 
 		HAL_UART_Transmit_DMA(HC05_handle, Data_to_PC, DATA_FRAME_TO_PC_SIZE);
 
@@ -226,7 +226,7 @@ void Start_IMU_Task(void const *argument) {
 
 		MPU9250_Calibration_Acce(&hi2c1, &mpu1);
 		MPU9250_Calibration_Gyro(&hi2c1, &mpu1);
-		MPU9250_Calibration_Mag(&hi2c1, &mpu1);
+		//MPU9250_Calibration_Mag(&hi2c1, &mpu1);
 
 		a_x_offset_global = mpu1.Accelerometer_X_offset, a_y_offset_global = mpu1.Accelerometer_Y_offset, a_z_offset_global = mpu1.Accelerometer_Z_offset;
 		g_x_offset_global = mpu1.Gyroscope_X_offset, g_y_offset_global = mpu1.Gyroscope_Y_offset, g_z_offset_global = mpu1.Gyroscope_Z_offset;
@@ -250,22 +250,26 @@ void Start_IMU_Task(void const *argument) {
 	osDelay(100);
 	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
+	/*
 	while(HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) != GPIO_PIN_RESET) {
 
 		osDelay(10);
 	}
+	*/
 
 	MPU9250_Calculate_RPY(&hi2c1, &mpu1, dt);
 	mpu1.Gyroscope_Roll  = mpu1.Accelerometer_Roll;
 	mpu1.Gyroscope_Pitch = mpu1.Accelerometer_Pitch;
 	mpu1.Gyroscope_Yaw   = mpu1.Magnetometer_Yaw;
 
+	/*
 	for(int i = 0; i < 1000; ++i) {
 
 		MPU9250_Calculate_RPY(&hi2c1, &mpu1, dt);
 		mpu1.Magnetometer_Yaw_offset += mpu1.Magnetometer_Yaw;
 	}
 	mpu1.Magnetometer_Yaw_offset = mpu1.Magnetometer_Yaw_offset / 1000;
+	*/
 
 	/* Infinite loop */
 	for (;;) {
@@ -275,7 +279,7 @@ void Start_IMU_Task(void const *argument) {
 			I_Time_Start = I_Time_Stop;
 			I_Time_Stop = HAL_GetTick();
 
-			dt = (float) (I_Time_Stop - I_Time_Start) / 1000;
+			dt = (double) (I_Time_Stop - I_Time_Start) / 1000;
 
 			/* Case 2: RPY calculation */
 			MPU9250_Calculate_RPY(&hi2c1, &mpu1, dt);
@@ -298,45 +302,26 @@ void Start_IMU_Task(void const *argument) {
 			//Mahony_filter(&mpu1, dt);
 
 			/* Filters data */
-			/*
-			switch (Which_filter_global) {
 
-				case 0:
-					Filter_Roll_global  = mpu1.Complementary_filter_Roll;
-					Filter_Pitch_global = mpu1.Complementary_filter_Pitch;
-					Filter_Yaw_global   = mpu1.Complementary_filter_Yaw - mpu1.Magnetometer_Yaw_offset;
-					break;
+			//Complementary_Roll_global  = mpu1.Complementary_filter_Roll;
+			//Complementary_Pitch_global = mpu1.Complementary_filter_Pitch;
+			//Complementary_Yaw_global   = mpu1.Complementary_filter_Yaw;
 
-				case 1:
-					Filter_Roll_global  = mpu1.Kalman_filter_Roll;
-					Filter_Pitch_global = mpu1.Kalman_filter_Pitch;
-					Filter_Yaw_global   = mpu1.Kalman_filter_Yaw - mpu1.Magnetometer_Yaw_offset;
-					break;
+			Complementary_Roll_global  = mpu1.Gyroscope_euler.roll;
+			Complementary_Pitch_global = mpu1.Gyroscope_euler.pitch;
+			Complementary_Yaw_global   = mpu1.Gyroscope_euler.yaw;
 
-				case 2:
-					Filter_Roll_global  = mpu1.Madgwick_filter_Roll;
-					Filter_Pitch_global = mpu1.Madgwick_filter_Pitch;
-					Filter_Yaw_global   = mpu1.Madgwick_filter_Yaw - mpu1.Magnetometer_Yaw_offset;
-					break;
-
-				case 3:
-					Filter_Roll_global  = mpu1.Mahony_filter_Roll;
-					Filter_Pitch_global = mpu1.Mahony_filter_Pitch;
-					Filter_Yaw_global   = mpu1.Mahony_filter_Yaw - mpu1.Magnetometer_Yaw_offset;
-					break;
-			}
-			*/
-			Complementary_Roll_global  = mpu1.Complementary_filter_Roll;
-			Complementary_Pitch_global = mpu1.Complementary_filter_Pitch;
-			Complementary_Yaw_global   = mpu1.Complementary_filter_Yaw;
+			//Complementary_Roll_global  = mpu1.Gyroscope_Roll;
+			//Complementary_Pitch_global = mpu1.Gyroscope_Pitch;
+			//Complementary_Yaw_global   = mpu1.Gyroscope_Yaw;
 
 			Kalman_Roll_global  = mpu1.Kalman_filter_Roll;
 			Kalman_Pitch_global = mpu1.Kalman_filter_Pitch;
-			Kalman_Yaw_global   = mpu1.Kalman_filter_Yaw;
+			Kalman_Yaw_global   = mpu1.Kalman_filter_Yaw /*- mpu1.Magnetometer_Yaw_offset*/;
 
 			Madgwick_Roll_global  = mpu1.Madgwick_filter_Roll;
 			Madgwick_Pitch_global = mpu1.Madgwick_filter_Pitch;
-			Madgwick_Yaw_global   = mpu1.Madgwick_filter_Yaw;
+			Madgwick_Yaw_global   = mpu1.Madgwick_filter_Yaw /*- mpu1.Magnetometer_Yaw_offset*/;
 		}
 
 		osDelay(10);
