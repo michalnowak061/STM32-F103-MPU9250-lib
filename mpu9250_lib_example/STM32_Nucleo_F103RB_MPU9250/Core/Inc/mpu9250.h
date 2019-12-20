@@ -243,7 +243,6 @@ struct MPU9250 {
 	float Magnetometer_X_uT,  Magnetometer_Y_uT,  Magnetometer_Z_uT;
 
 	float Accelerometer_Roll, Accelerometer_Pitch;
-	float Gyroscope_Roll, Gyroscope_Pitch, Gyroscope_Yaw;
 	float Magnetometer_Roll, Magnetometer_Pitch, Magnetometer_Yaw;
 
 	/* Gyroscope variables */
@@ -264,7 +263,9 @@ struct MPU9250 {
 	float Kalman_filter_Roll, Kalman_filter_Pitch, Kalman_filter_Yaw;
 
 	/* Madgwick filter variables */
-	float Madgwick_filter_Roll, Madgwick_filter_Pitch, Madgwick_filter_Yaw;
+	struct quaternion Madgwick_quaternion;
+	struct euler Madgwick_euler;
+	//float Madgwick_filter_Roll, Madgwick_filter_Pitch, Madgwick_filter_Yaw;
 
 	/* Mahony filter variables */
 	float Mahony_filter_Roll, Mahony_filter_Pitch, Mahony_filter_Yaw;

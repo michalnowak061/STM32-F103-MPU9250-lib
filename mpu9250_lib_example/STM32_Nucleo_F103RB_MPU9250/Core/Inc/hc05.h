@@ -12,7 +12,7 @@
 #include "crc.h"
 
 #define DATA_FRAME_FROM_PC_SIZE 	10
-#define DATA_FRAME_TO_PC_SIZE 		21
+#define DATA_FRAME_TO_PC_SIZE 		23
 
 /* --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 struct Data_frame_to_PC {
@@ -48,7 +48,7 @@ int16_t HC05_Merge_bytes(uint8_t _lower_byte, uint8_t _higher_byte);
 void HC05_Fill_Data_frame_to_PC(struct Data_frame_to_PC *_data, uint8_t *_frame,
 								float Complementary_Roll, float Complementary_Pitch, float Complementary_Yaw,
 								float Kalman_Roll, float Kalman_Pitch, float Kalman_Yaw,
-								float Madgwick_Roll, float Madgwick_Pitch, float Madgwick_Yaw);
+								double Madgwick_q_w, double Madgwick_q_x, double Madgwick_q_y, double Madgwick_q_z);
 
 /* --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 int HC05_Parse_Data_frame(struct Data_frame_from_PC *_data, uint8_t *_frame);

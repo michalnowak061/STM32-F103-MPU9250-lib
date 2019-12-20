@@ -250,6 +250,9 @@ MPU9250_Error_code MPU9250_Init(I2C_HandleTypeDef *I2Cx,
 	quaternion_init( &(DataStructure->Gyroscope_quaternion) );
 	euler_init( &(DataStructure->Gyroscope_euler) );
 
+	quaternion_init( &(DataStructure->Madgwick_quaternion) );
+	euler_init( &(DataStructure->Madgwick_euler) );
+
 	return MPU9250_Init_OK;
 }
 
@@ -458,13 +461,6 @@ void MPU9250_Set_Offsets(I2C_HandleTypeDef *I2Cx,
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
-float r11 = 1, r12 = 0, r13 = 0,
-	  r21 = 0, r22 = 1, r23 = 0,
-	  r31 = 0, r32 = 0, r33 = 1;
-
-float r11p = 1, r12p = 0, r13p = 0,
-	  r21p = 0, r22p = 1, r23p = 0,
-	  r31p = 0, r32p = 0, r33p = 1;
 
 void MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
 	      	  	  	  	  	  	  		 struct MPU9250 *DataStructure,
@@ -480,42 +476,6 @@ void MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
 	DataStructure->Accelerometer_Pitch = atan2f(-DataStructure->Accelerometer_X_g, sqrtf(powf(DataStructure->Accelerometer_Y_g,2) + powf(DataStructure->Accelerometer_Z_g,2))) * (180 / M_PI);
 
 	/* Case 3: Calculate gyroscope Roll, Pitch and Yaw */
-	r11 = r11p + (r12p * DataStructure->Gyroscope_Z_dgs * (M_PI / 180) * dt) - (r13p * DataStructure->Gyroscope_Y_dgs * (M_PI / 180) * dt);
-	r12 = (-r11p * DataStructure->Gyroscope_Z_dgs * (M_PI / 180) * dt) + r12p + (r13p * DataStructure->Gyroscope_X_dgs * (M_PI / 180) * dt);
-	r13 = (r11p * DataStructure->Gyroscope_Y_dgs * (M_PI / 180) * dt) - (r12p * DataStructure->Gyroscope_X_dgs * (M_PI / 180) * dt) + r13p;
-
-	r21 = r21p + (r22p * DataStructure->Gyroscope_Z_dgs * (M_PI / 180) * dt) - (r23p * DataStructure->Gyroscope_Y_dgs * (M_PI / 180) * dt);
-	r22 = (-r21p * DataStructure->Gyroscope_Z_dgs * (M_PI / 180) * dt) + r22p + (r23p * DataStructure->Gyroscope_X_dgs * (M_PI / 180) * dt);
-	r23 = (r21p * DataStructure->Gyroscope_Y_dgs * (M_PI / 180) * dt) - (r22p * DataStructure->Gyroscope_X_dgs * (M_PI / 180) * dt) + r23p;
-
-	r31 = r31p + (r32p * DataStructure->Gyroscope_Z_dgs * (M_PI / 180) * dt) - (r33p * DataStructure->Gyroscope_Y_dgs * (M_PI / 180) * dt);
-	r32 = (-r31p * DataStructure->Gyroscope_Z_dgs * (M_PI / 180) * dt) + r32p + (r33p * DataStructure->Gyroscope_X_dgs * (M_PI / 180) * dt);
-	r33 = (r31p * DataStructure->Gyroscope_Y_dgs * (M_PI / 180) * dt) - (r32p * DataStructure->Gyroscope_X_dgs * (M_PI / 180) * dt) + r33p;
-
-	r11p = r11, r12p = r12, r13p = r13,
-	r21p = r21, r22p = r22, r23p = r23,
-	r31p = r31, r32p = r32, r33p = r33;
-
-	float Beta = atan2f(-r31, sqrtf( powf(r11,2) + powf(r21,2) ) );
-
-	DataStructure->Gyroscope_Pitch = Beta * (180 / M_PI);
-	DataStructure->Gyroscope_Roll  = atan2f(r32 / cosf(Beta), r33 / cosf(Beta) ) * (180 / M_PI);
-	DataStructure->Gyroscope_Yaw   = atan2f(r21 / cosf(Beta), r11 / cosf(Beta) ) * (180 / M_PI);
-
-	/* Case 4: Calculate magnetometer Yaw */
-	int16_t m_x = DataStructure->Magnetometer_X_uT;
-	int16_t m_y = DataStructure->Magnetometer_Y_uT;
-	int16_t m_z = DataStructure->Magnetometer_Z_uT;
-
-	float Roll  = DataStructure->Accelerometer_Roll  * (M_PI / 180);
-	float Pitch = DataStructure->Accelerometer_Pitch * (M_PI / 180);
-
-	float X_h = m_x * cosf(Pitch) + m_y * sinf(Roll) * sinf(Pitch) + m_z * cosf(Roll) * sinf(Pitch);
-	float Y_h = m_y * cosf(Roll)  - m_z * sinf(Roll);
-
-	DataStructure->Magnetometer_Yaw = atan2f(-Y_h, X_h) * (180 / M_PI);
-
-	/* Case x: Gyroscope calculate Quaternion */
 	struct quaternion temp_quaternion;
 	temp_quaternion.w = 0.5 * DataStructure->Gyroscope_quaternion.w;
 	temp_quaternion.x = 0.5 * DataStructure->Gyroscope_quaternion.x;
@@ -541,6 +501,19 @@ void MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
 	quaternion_to_matrix(&DataStructure->Gyroscope_quaternion, &gyroscope_matrix);
 
 	matrix_to_euler(&gyroscope_matrix, &DataStructure->Gyroscope_euler);
+
+	/* Case 4: Calculate magnetometer Yaw */
+	int16_t m_x = DataStructure->Magnetometer_X_uT;
+	int16_t m_y = DataStructure->Magnetometer_Y_uT;
+	int16_t m_z = DataStructure->Magnetometer_Z_uT;
+
+	float Roll  = DataStructure->Accelerometer_Roll  * (M_PI / 180);
+	float Pitch = DataStructure->Accelerometer_Pitch * (M_PI / 180);
+
+	float X_h = m_x * cosf(Pitch) + m_y * sinf(Roll) * sinf(Pitch) + m_z * cosf(Roll) * sinf(Pitch);
+	float Y_h = m_y * cosf(Roll)  - m_z * sinf(Roll);
+
+	DataStructure->Magnetometer_Yaw = atan2f(-Y_h, X_h) * (180 / M_PI);
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
@@ -594,9 +567,17 @@ void Madgwick_filter(struct MPU9250 *DataStructure,
 					   DataStructure->Magnetometer_X_uT, DataStructure->Magnetometer_Y_uT, DataStructure->Magnetometer_Z_uT,
 					   dt);
 
-	DataStructure->Madgwick_filter_Roll  = atan2f( 2 * (q0*q1 + q2*q3), 1 - 2 * (powf(q1,2) + powf(q2,2)) ) * (180 / M_PI);
-	DataStructure->Madgwick_filter_Pitch = asinf( 2 * (q0*q2 - q3*q1) )                                     * (180 / M_PI);
-	DataStructure->Madgwick_filter_Yaw   = atan2f( 2 * (q0*q3 + q1*q2), 1 - 2 * (powf(q2,2) + powf(q3,2)) ) * (180 / M_PI);
+	DataStructure->Madgwick_quaternion.w = q0;
+	DataStructure->Madgwick_quaternion.x = q1;
+	DataStructure->Madgwick_quaternion.y = q2;
+	DataStructure->Madgwick_quaternion.z = q3;
+
+	quaternion_normalise(&DataStructure->Madgwick_quaternion);
+
+	struct rot_matrix madgwick_matrix;
+	quaternion_to_matrix(&DataStructure->Madgwick_quaternion, &madgwick_matrix);
+
+	matrix_to_euler(&madgwick_matrix, &DataStructure->Madgwick_euler);
 }
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 

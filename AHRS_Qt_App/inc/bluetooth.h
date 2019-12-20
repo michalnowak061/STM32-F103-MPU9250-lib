@@ -9,7 +9,7 @@
 
 #include "math.h"
 
-#define DATA_FRAME_FROM_ROBOT_SIZE      21
+#define DATA_FRAME_FROM_ROBOT_SIZE      23
 #define DATA_FRAME_TO_ROBOT_SIZE        10
 
 #define POLYNOMIAL_9	0x31
@@ -41,7 +41,7 @@ struct Data_from_Robot
 {
     double Complementary_roll, Complementary_pitch, Complementary_yaw;
     double Kalman_roll, Kalman_pitch, Kalman_yaw;
-    double Madgwick_roll, Madgwick_pitch, Madgwick_yaw;
+    double Madgwick_w, Madgwick_x, Madgwick_y, Madgwick_z;
 
     double g_x_dgs, g_y_dgs, g_z_dgs;
     double a_x_g, a_y_g, a_z_g;

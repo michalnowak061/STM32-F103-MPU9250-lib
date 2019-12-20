@@ -29,6 +29,7 @@ INCLUDEPATH += inc\
 SOURCES += \
         src/bluetooth.cpp \
         src/communicationwindow.cpp \
+        src/geometryengine.cpp \
         src/glwidget.cpp \
         src/main.cpp \
         src/mainwindow.cpp \
@@ -37,6 +38,7 @@ SOURCES += \
 HEADERS += \
         inc/bluetooth.h \
         inc/communicationwindow.h \
+        inc/geometryengine.h \
         inc/glwidget.h \
         inc/mainwindow.h \
         inc/qcustomplot.h
@@ -51,6 +53,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 RESOURCES += \
+    shaders.qrc \
     zasoby.qrc \
     zasoby.qrc
 
@@ -75,4 +78,5 @@ DISTFILES += \
     png/Red_dot.png \
     png/Speed.png \
     png/Stop_button.png \
-    png/Variables.png
+    png/Variables.png \
+    png/cube.png

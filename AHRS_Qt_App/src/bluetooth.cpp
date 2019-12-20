@@ -80,9 +80,10 @@ Bluetooth::Bluetooth()
     DF_Robot.Kalman_roll = 0;
     DF_Robot.Kalman_pitch = 0;
     DF_Robot.Kalman_yaw = 0;
-    DF_Robot.Madgwick_roll = 0;
-    DF_Robot.Madgwick_pitch = 0;
-    DF_Robot.Madgwick_yaw = 0;
+    DF_Robot.Madgwick_w = 1;
+    DF_Robot.Madgwick_x = 0;
+    DF_Robot.Madgwick_y = 0;
+    DF_Robot.Madgwick_z = 0;
     DF_Robot.g_x_dgs = 0;
     DF_Robot.g_y_dgs = 0;
     DF_Robot.g_z_dgs = 0;
@@ -180,8 +181,8 @@ void Bluetooth::Receive_frame()
         int8_t CRC_received = Data_frame_from_robot[DATA_FRAME_FROM_ROBOT_SIZE - 1];
         int8_t CRC_actual = CRC8_DataArray(Data_frame_from_robot, DATA_FRAME_FROM_ROBOT_SIZE - 1);
 
-        int16_t test_int = Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[18]),
-                                       static_cast<uint8_t>(Data_frame_from_robot[19]) );
+        int16_t test_int = Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[20]),
+                                       static_cast<uint8_t>(Data_frame_from_robot[21]) );
 
         if( CRC_actual == CRC_received && CRC_received != 0 && test_int == -32768) {
 
@@ -210,12 +211,14 @@ void Bluetooth::Parse_data_frame()
     DF_Robot.Kalman_yaw   = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[10]),
                                                              static_cast<uint8_t>(Data_frame_from_robot[11])  ) ) / 100;
 
-    DF_Robot.Madgwick_roll  = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[12]),
-                                                               static_cast<uint8_t>(Data_frame_from_robot[13])  ) ) / 100;
-    DF_Robot.Madgwick_pitch = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[14]),
-                                                               static_cast<uint8_t>(Data_frame_from_robot[15])  ) ) / 100;
-    DF_Robot.Madgwick_yaw   = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[16]),
-                                                               static_cast<uint8_t>(Data_frame_from_robot[17])  ) ) / 100;
+    DF_Robot.Madgwick_w = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[12]),
+                                                               static_cast<uint8_t>(Data_frame_from_robot[13])  ) ) / 1000;
+    DF_Robot.Madgwick_x = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[14]),
+                                                               static_cast<uint8_t>(Data_frame_from_robot[15])  ) ) / 1000;
+    DF_Robot.Madgwick_y   = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[16]),
+                                                               static_cast<uint8_t>(Data_frame_from_robot[17])  ) ) / 1000;
+    DF_Robot.Madgwick_z   = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[18]),
+                                                               static_cast<uint8_t>(Data_frame_from_robot[19])  ) ) / 1000;
 
     emit Parsed_frame_OK_Signal();
 

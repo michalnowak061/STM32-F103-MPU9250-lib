@@ -177,9 +177,9 @@ void MainWindow::MainWindow_Display_IMU_data()
     double Kalman_Pitch = Data_from.Kalman_pitch;
     double Kalman_Yaw   = Data_from.Kalman_yaw;
 
-    double Madgwick_Roll  = Data_from.Madgwick_roll;
-    double Madgwick_Pitch = Data_from.Madgwick_pitch;
-    double Madgwick_Yaw   = Data_from.Madgwick_yaw;
+    double Madgwick_Roll  = Data_from.Madgwick_w;
+    double Madgwick_Pitch = Data_from.Madgwick_x;
+    double Madgwick_Yaw   = Data_from.Madgwick_y;
 
     // add data to lines:
     if(Show_Gyroscope_X == true) ui->Complementary_Graph->graph(0)->addData(key, Complementary_Roll);
@@ -261,6 +261,9 @@ void MainWindow::MainWindow_Display_IMU_data()
     ui->Madgwick_Visualisation->setZRotation(-Madgwick_Roll);
     ui->Madgwick_Visualisation->setXRotation(-Madgwick_Pitch);
     ui->Madgwick_Visualisation->setYRotation(Madgwick_Yaw);
+
+    ui->Madgwick_Visualisation->setQuaternion(Data_from.Madgwick_w,Data_from.Madgwick_x,Data_from.Madgwick_y,Data_from.Madgwick_z);
+    ui->Madgwick_Visualisation->show();
 
     ui->lcdNumber_Madgwick_Roll->display(Madgwick_Roll);
     ui->lcdNumber_Madgwick_Pitch->display(Madgwick_Pitch);

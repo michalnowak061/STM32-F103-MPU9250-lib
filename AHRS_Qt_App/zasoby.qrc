@@ -21,5 +21,6 @@
         <file>png/Fusion.png</file>
         <file>png/Variables.png</file>
         <file>png/Bluetooth.png</file>
+        <file>png/cube.png</file>
     </qresource>
 </RCC>

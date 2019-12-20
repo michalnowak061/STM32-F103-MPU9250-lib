@@ -2,12 +2,19 @@
 #define GLWIDGET_H
 
 #include <QOpenGLWidget>
+#include <QOpenGLFunctions>
+#include <QMatrix4x4>
+#include <QQuaternion>
+#include <QVector2D>
+#include <QBasicTimer>
 #include <QOpenGLShaderProgram>
-#include <QCoreApplication>
-#include <math.h>
-#include <GLUT/glut.h>
+#include <QOpenGLTexture>
 
-class GLWidget : public QOpenGLWidget
+#include "geometryengine.h"
+
+class GeometryEngine;
+
+class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
     Q_OBJECT
 
@@ -16,6 +23,24 @@ private:
     double m_xRot;
     double m_yRot;
     double m_zRot;
+
+    double q_w;
+    double q_x;
+    double q_y;
+    double q_z;
+
+    QBasicTimer timer;
+    QOpenGLShaderProgram program;
+    GeometryEngine *geometries;
+
+    QOpenGLTexture *texture;
+
+    QMatrix4x4 projection;
+
+    QVector2D mousePressPosition;
+    QVector3D rotationAxis;
+    qreal angularSpeed;
+    QQuaternion rotation;
 
 public:
 
@@ -31,11 +56,16 @@ public slots:
     void setYRotation(double angle);
     void setZRotation(double angle);
 
+    void setQuaternion(double w, double x, double y, double z);
+
 protected:
 
-    void initializeGL()                         Q_DECL_OVERRIDE;
-    void paintGL()                              Q_DECL_OVERRIDE;
-    void resizeGL(int width, int height)        Q_DECL_OVERRIDE;
+    void initializeGL() override;
+    void resizeGL(int w, int h) override;
+    void paintGL() override;
+
+    void initShaders();
+    void initTextures();
 };
 
 #endif

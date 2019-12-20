@@ -73,6 +73,16 @@ void GLWidget::setZRotation(double angle)
     }
 }
 
+void GLWidget::setQuaternion(double w, double x, double y, double z) {
+
+    q_w = w;
+    q_x = x;
+    q_y = y;
+    q_z = z;
+
+    update();
+}
+
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 void GLCreateCube(float x, float y, float z) {
@@ -141,45 +151,107 @@ void GLCreateCube(float x, float y, float z) {
 
 void GLWidget::initializeGL() {
 
+    initializeOpenGLFunctions();
 
-    // Enable background color
-    glClearColor(static_cast<GLclampf>(0.2),
-                 static_cast<GLclampf>(0.2),
-                 static_cast<GLclampf>(0.2),
-                 1);
+    glClearColor(0, 0, 0, 1);
 
+    initShaders();
+    initTextures();
+
+//! [2]
     // Enable depth buffer
     glEnable(GL_DEPTH_TEST);
+
+    // Enable back face culling
+    glEnable(GL_CULL_FACE);
+//! [2]
+
+    geometries = new GeometryEngine;
+
+    // Use QBasicTimer because its faster than QTimer
+    timer.start(12, this);
+}
+
+void GLWidget::initShaders()
+{
+    // Compile vertex shader
+    if (!program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/vshader.glsl"))
+        close();
+
+    // Compile fragment shader
+    if (!program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/fshader.glsl"))
+        close();
+
+    // Link shader pipeline
+    if (!program.link())
+        close();
+
+    // Bind shader pipeline for use
+    if (!program.bind())
+        close();
+}
+
+void GLWidget::initTextures()
+{
+    // Load cube.png image
+    texture = new QOpenGLTexture(QImage(":/new/prefix1/png/cube.png").mirrored());
+
+    // Set nearest filtering mode for texture minification
+    texture->setMinificationFilter(QOpenGLTexture::Nearest);
+
+    // Set bilinear filtering mode for texture magnification
+    texture->setMagnificationFilter(QOpenGLTexture::Linear);
+
+    // Wrap texture coordinates by repeating
+    // f.ex. texture coordinate (1.1, 1.2) is same as (0.1, 0.2)
+    texture->setWrapMode(QOpenGLTexture::Repeat);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 void GLWidget::paintGL() {
 
+    // Clear color and depth buffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    gluLookAt(0,0,5, 0,0,0, 0,1,0);
+    texture->bind();
 
-    glRotated(m_yRot,  0,1,0);
-    glRotated(m_zRot,  0,0,1);
-    glRotated(m_xRot,  1,0,0);
+//! [6]
+    // Calculate model view transformation
+    rotation = QQuaternion(q_w, q_x, q_y, q_z);
 
-    GLCreateCube(2.5 * 0.75, 0.5 * 0.75, 2 * 0.75);
+    QMatrix4x4 matrix;
+    matrix.translate(0.0, 0.0, -5.0);
+    matrix.rotate(rotation);
+
+    // Set modelview-projection matrix
+    program.setUniformValue("mvp_matrix", projection * matrix);
+//! [6]
+
+    // Use texture unit 0 which contains cube.png
+    program.setUniformValue("texture", 0);
+
+    // Draw cube geometry
+    geometries->drawCubeGeometry(&program);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 void GLWidget::resizeGL(int w, int h) {
 
-    glViewport(0,0,w,h);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(45, (float)w/h, 0.01, 100.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    gluLookAt(-0.5,0,4,0,0,-100,0,1,0);
+    // Calculate aspect ratio
+    qreal aspect = qreal(w) / qreal(h ? h : 1);
+
+    // Set near plane to 3.0, far plane to 7.0, field of view 45 degrees
+    const qreal zNear = 3.0, zFar = 7.0, fov = 45.0;
+
+    // Reset projection
+    projection.setToIdentity();
+
+    // Set perspective projection
+    projection.perspective(fov, aspect, zNear, zFar);
+
+    update();
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

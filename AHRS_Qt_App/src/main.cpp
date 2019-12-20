@@ -1,5 +1,7 @@
 #include "mainwindow.h"
 #include <QApplication>
+#include <QLabel>
+#include <QSurfaceFormat>
 
 int main(int argc, char *argv[])
 {
