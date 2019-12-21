@@ -5,9 +5,6 @@
 GLWidget::GLWidget(QWidget *parent)
     : QOpenGLWidget(parent)
 {
-    m_xRot = 0;
-    m_yRot = 0;
-    m_zRot = 0;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -30,48 +27,8 @@ QSize GLWidget::sizeHint() const
     return QSize(200, 200);
 }
 
-// -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-static void qNormalizeAngle(double &angle)
-{
-    while (angle < 0)
-        angle += 360 * 16;
-    while (angle > 360 * 16)
-        angle -= 360 * 16;
-}
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void GLWidget::setXRotation(double angle)
-{
-    qNormalizeAngle(angle);
-    if (angle != m_xRot) {
-        m_xRot = angle;
-        update();
-    }
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void GLWidget::setYRotation(double angle)
-{
-    qNormalizeAngle(angle);
-    if (angle != m_yRot) {
-        m_yRot = angle;
-        update();
-    }
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void GLWidget::setZRotation(double angle)
-{
-    qNormalizeAngle(angle);
-    if (angle != m_zRot) {
-        m_zRot = angle;
-        update();
-    }
-}
 
 void GLWidget::setQuaternion(double w, double x, double y, double z) {
 
@@ -158,19 +115,16 @@ void GLWidget::initializeGL() {
     initShaders();
     initTextures();
 
-//! [2]
     // Enable depth buffer
     glEnable(GL_DEPTH_TEST);
 
     // Enable back face culling
     glEnable(GL_CULL_FACE);
-//! [2]
 
     geometries = new GeometryEngine;
-
-    // Use QBasicTimer because its faster than QTimer
-    timer.start(12, this);
 }
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 void GLWidget::initShaders()
 {
@@ -190,6 +144,8 @@ void GLWidget::initShaders()
     if (!program.bind())
         close();
 }
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 void GLWidget::initTextures()
 {
@@ -216,9 +172,10 @@ void GLWidget::paintGL() {
 
     texture->bind();
 
-//! [6]
     // Calculate model view transformation
-    rotation = QQuaternion(q_w, q_x, q_y, q_z);
+    //rotationAxis = QVector3D(0,0,0);
+    rotation = QQuaternion(q_w, -q_x, q_z, q_y);
+    //update();
 
     QMatrix4x4 matrix;
     matrix.translate(0.0, 0.0, -5.0);
@@ -226,7 +183,6 @@ void GLWidget::paintGL() {
 
     // Set modelview-projection matrix
     program.setUniformValue("mvp_matrix", projection * matrix);
-//! [6]
 
     // Use texture unit 0 which contains cube.png
     program.setUniformValue("texture", 0);
@@ -250,8 +206,6 @@ void GLWidget::resizeGL(int w, int h) {
 
     // Set perspective projection
     projection.perspective(fov, aspect, zNear, zFar);
-
-    update();
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

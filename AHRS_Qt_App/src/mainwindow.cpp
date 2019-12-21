@@ -177,9 +177,10 @@ void MainWindow::MainWindow_Display_IMU_data()
     double Kalman_Pitch = Data_from.Kalman_pitch;
     double Kalman_Yaw   = Data_from.Kalman_yaw;
 
-    double Madgwick_Roll  = Data_from.Madgwick_w;
-    double Madgwick_Pitch = Data_from.Madgwick_x;
-    double Madgwick_Yaw   = Data_from.Madgwick_y;
+    QVector3D Madgwick_euler = QQuaternion(Data_from.Madgwick_w,Data_from.Madgwick_x,Data_from.Madgwick_y,Data_from.Madgwick_z).toEulerAngles();
+    double Madgwick_Roll  = Madgwick_euler.x();
+    double Madgwick_Pitch = Madgwick_euler.y();
+    double Madgwick_Yaw   = Madgwick_euler.z();
 
     // add data to lines:
     if(Show_Gyroscope_X == true) ui->Complementary_Graph->graph(0)->addData(key, Complementary_Roll);
@@ -242,25 +243,21 @@ void MainWindow::MainWindow_Display_IMU_data()
         ui->lcdNumber_Magnetometer_Z->display(Madgwick_Yaw);
     }
 
-    ui->Complementary_Visualisation->setZRotation(-Complementary_Roll);
-    ui->Complementary_Visualisation->setXRotation(-Complementary_Pitch);
-    ui->Complementary_Visualisation->setYRotation(Complementary_Yaw);
+    //ui->Complementary_Visualisation->setZRotation(-Complementary_Roll);
+    //ui->Complementary_Visualisation->setXRotation(-Complementary_Pitch);
+    //ui->Complementary_Visualisation->setYRotation(Complementary_Yaw);
 
-    ui->lcdNumber_Complementary_Roll->display(Complementary_Roll);
-    ui->lcdNumber_Complementary_Pitch->display(Complementary_Pitch);
-    ui->lcdNumber_Complementary_Yaw->display(Complementary_Yaw);
+    //ui->lcdNumber_Complementary_Roll->display(Complementary_Roll);
+    //ui->lcdNumber_Complementary_Pitch->display(Complementary_Pitch);
+    //ui->lcdNumber_Complementary_Yaw->display(Complementary_Yaw);
 
-    ui->Kalman_Visualisation->setZRotation(-Kalman_Roll);
-    ui->Kalman_Visualisation->setXRotation(-Kalman_Pitch);
-    ui->Kalman_Visualisation->setYRotation(Kalman_Yaw);
+    //ui->Kalman_Visualisation->setZRotation(-Kalman_Roll);
+    //ui->Kalman_Visualisation->setXRotation(-Kalman_Pitch);
+    //ui->Kalman_Visualisation->setYRotation(Kalman_Yaw);
 
     ui->lcdNumber_Kalman_Roll->display(Kalman_Roll);
     ui->lcdNumber_Kalman_Pitch->display(Kalman_Pitch);
     ui->lcdNumber_Kalman_Yaw->display(Kalman_Yaw);
-
-    ui->Madgwick_Visualisation->setZRotation(-Madgwick_Roll);
-    ui->Madgwick_Visualisation->setXRotation(-Madgwick_Pitch);
-    ui->Madgwick_Visualisation->setYRotation(Madgwick_Yaw);
 
     ui->Madgwick_Visualisation->setQuaternion(Data_from.Madgwick_w,Data_from.Madgwick_x,Data_from.Madgwick_y,Data_from.Madgwick_z);
     ui->Madgwick_Visualisation->show();

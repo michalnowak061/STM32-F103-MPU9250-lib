@@ -20,26 +20,16 @@ class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 
 private:
 
-    double m_xRot;
-    double m_yRot;
-    double m_zRot;
-
     double q_w;
     double q_x;
     double q_y;
     double q_z;
 
-    QBasicTimer timer;
     QOpenGLShaderProgram program;
     GeometryEngine *geometries;
-
     QOpenGLTexture *texture;
-
     QMatrix4x4 projection;
-
-    QVector2D mousePressPosition;
     QVector3D rotationAxis;
-    qreal angularSpeed;
     QQuaternion rotation;
 
 public:
@@ -51,10 +41,6 @@ public:
     QSize sizeHint()        const Q_DECL_OVERRIDE;
 
 public slots:
-
-    void setXRotation(double angle);
-    void setYRotation(double angle);
-    void setZRotation(double angle);
 
     void setQuaternion(double w, double x, double y, double z);
 
