@@ -430,8 +430,6 @@ void MPU9250_Calibration_Mag(I2C_HandleTypeDef *I2Cx,
 	DataStructure->Magnetometer_X_scale = delta / delta_x;
 	DataStructure->Magnetometer_Y_scale = delta / delta_y;
 	DataStructure->Magnetometer_Z_scale = delta / delta_z;
-
-
 }
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
@@ -466,16 +464,36 @@ void MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
 	      	  	  	  	  	  	  		 struct MPU9250 *DataStructure,
 										 double dt) {
 
-	/* Case 1: */
+	/* Case 1: Read data from AHRS */
 	MPU9250_Read_Accelerometer(I2Cx, DataStructure);
 	MPU9250_Read_Gyroscope(I2Cx, DataStructure);
 	MPU9250_Read_Magnetometer(I2Cx, DataStructure);
 
-	/* Case 2: Calculate accelerometer Roll and Pitch */
-	DataStructure->Accelerometer_Roll  = atan2f(DataStructure->Accelerometer_Y_g, DataStructure->Accelerometer_Z_g) * (180 / M_PI);
-	DataStructure->Accelerometer_Pitch = atan2f(-DataStructure->Accelerometer_X_g, sqrtf(powf(DataStructure->Accelerometer_Y_g,2) + powf(DataStructure->Accelerometer_Z_g,2))) * (180 / M_PI);
+	/* Case 2: Calculate accelerometer quaternion */
+	double norm = sqrt( pow(DataStructure->Accelerometer_X_g,2) + pow(DataStructure->Accelerometer_Y_g,2) + pow(DataStructure->Accelerometer_Z_g,2) );
+	DataStructure->Accelerometer_X_g = DataStructure->Accelerometer_X_g / norm;
+	DataStructure->Accelerometer_Y_g = DataStructure->Accelerometer_Y_g / norm;
+	DataStructure->Accelerometer_Z_g = DataStructure->Accelerometer_Z_g / norm;
 
-	/* Case 3: Calculate gyroscope Roll, Pitch and Yaw */
+	if( DataStructure->Accelerometer_Z_g >= 0 ) {
+
+		double a = sqrt( 2 * ( DataStructure->Accelerometer_Z_g + 1 ) );
+
+		DataStructure->Accelerometer_quaternion.w = sqrt( (DataStructure->Accelerometer_Z_g + 1) / 2 );
+		DataStructure->Accelerometer_quaternion.x = DataStructure->Accelerometer_Y_g / a;
+		DataStructure->Accelerometer_quaternion.y = -DataStructure->Accelerometer_X_g / a;
+		DataStructure->Accelerometer_quaternion.z = 0;
+	}
+	else {
+
+		double a = sqrt( 2 * (1 - DataStructure->Accelerometer_Z_g) );
+		DataStructure->Accelerometer_quaternion.z = -DataStructure->Accelerometer_Y_g / a;
+		DataStructure->Accelerometer_quaternion.y = -sqrt( (1 - DataStructure->Accelerometer_Z_g) / 2 );
+		DataStructure->Accelerometer_quaternion.x = 0;
+		DataStructure->Accelerometer_quaternion.w = DataStructure->Accelerometer_X_g / a;
+	}
+
+	/* Case 3: Calculate gyroscope quaternion */
 	struct quaternion temp_quaternion;
 	temp_quaternion.w = 0.5 * DataStructure->Gyroscope_quaternion.w;
 	temp_quaternion.x = 0.5 * DataStructure->Gyroscope_quaternion.x;
@@ -502,18 +520,50 @@ void MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
 
 	matrix_to_euler(&gyroscope_matrix, &DataStructure->Gyroscope_euler);
 
-	/* Case 4: Calculate magnetometer Yaw */
-	int16_t m_x = DataStructure->Magnetometer_X_uT;
-	int16_t m_y = DataStructure->Magnetometer_Y_uT;
-	int16_t m_z = DataStructure->Magnetometer_Z_uT;
+	/* Case 4: Calculate magnetometer quaternion */
+	double L = pow(DataStructure->Magnetometer_X_uT,2) + pow(DataStructure->Magnetometer_Y_uT,2);
 
-	float Roll  = DataStructure->Accelerometer_Roll  * (M_PI / 180);
-	float Pitch = DataStructure->Accelerometer_Pitch * (M_PI / 180);
+	if( DataStructure->Magnetometer_Y_uT >= 0 ) {
 
-	float X_h = m_x * cosf(Pitch) + m_y * sinf(Roll) * sinf(Pitch) + m_z * cosf(Roll) * sinf(Pitch);
-	float Y_h = m_y * cosf(Roll)  - m_z * sinf(Roll);
+		DataStructure->Magnetometer_quaternion.w = -( sqrt( L + (DataStructure->Magnetometer_X_uT * sqrt(L)) ) ) / ( sqrt(2 * L) );
+		DataStructure->Magnetometer_quaternion.x = 0;
+		DataStructure->Magnetometer_quaternion.y = 0;
+		DataStructure->Magnetometer_quaternion.z = ( DataStructure->Magnetometer_Y_uT ) / ( sqrt(2) * sqrt( L + (DataStructure->Magnetometer_X_uT * sqrt(L)) ) );
+	}
+	else {
 
-	DataStructure->Magnetometer_Yaw = atan2f(-Y_h, X_h) * (180 / M_PI);
+		DataStructure->Magnetometer_quaternion.w = -( DataStructure->Magnetometer_Y_uT ) / ( sqrt(2) * sqrt( L - (DataStructure->Magnetometer_X_uT * sqrt(L)) ) );
+		DataStructure->Magnetometer_quaternion.x = 0;
+		DataStructure->Magnetometer_quaternion.y = 0;
+		DataStructure->Magnetometer_quaternion.z = ( sqrt( L - (DataStructure->Magnetometer_X_uT * sqrt(L)) ) ) / ( sqrt(2 * L) );
+	}
+
+	DataStructure->Magnetometer_quaternion = quaternion_tensor_product(&DataStructure->Accelerometer_quaternion, &DataStructure->Magnetometer_quaternion);
+	quaternion_normalise(&DataStructure->Magnetometer_quaternion);
+
+	/* Case 5: Calculate accelerometer velocity */
+	DataStructure->Accelerometer_X_velocity = DataStructure->Accelerometer_X_velocity_past + DataStructure->Accelerometer_X_g_past + ( (DataStructure->Accelerometer_X_g - DataStructure->Accelerometer_X_g_past) / 2);
+	DataStructure->Accelerometer_Y_velocity = DataStructure->Accelerometer_Y_velocity_past + DataStructure->Accelerometer_Y_g_past + ( (DataStructure->Accelerometer_Y_g - DataStructure->Accelerometer_Y_g_past) / 2);
+	DataStructure->Accelerometer_Z_velocity = DataStructure->Accelerometer_Z_velocity_past + DataStructure->Accelerometer_Z_g_past + ( (DataStructure->Accelerometer_Z_g - DataStructure->Accelerometer_Z_g_past) / 2);
+
+	/* Case 5: Calculate accelerometer position */
+	DataStructure->Accelerometer_X_position = DataStructure->Accelerometer_X_position_past + DataStructure->Accelerometer_X_velocity_past + ( (DataStructure->Accelerometer_X_velocity - DataStructure->Accelerometer_X_velocity_past) / 2);
+	DataStructure->Accelerometer_Y_position = DataStructure->Accelerometer_Y_position_past + DataStructure->Accelerometer_Y_velocity_past + ( (DataStructure->Accelerometer_Y_velocity - DataStructure->Accelerometer_Y_velocity_past) / 2);
+	DataStructure->Accelerometer_Z_position = DataStructure->Accelerometer_Z_position_past + DataStructure->Accelerometer_Z_velocity_past + ( (DataStructure->Accelerometer_Z_velocity - DataStructure->Accelerometer__velocity_past) / 2);
+
+
+
+	DataStructure->Accelerometer_X_g_past = DataStructure->Accelerometer_X_g;
+	DataStructure->Accelerometer_Y_g_past = DataStructure->Accelerometer_Y_g;
+	DataStructure->Accelerometer_Z_g_past = DataStructure->Accelerometer_Z_g;
+
+	DataStructure->Accelerometer_X_velocity_past = DataStructure->Accelerometer_X_velocity;
+	DataStructure->Accelerometer_Y_velocity_past = DataStructure->Accelerometer_Y_velocity;
+	DataStructure->Accelerometer_Z_velocity_past = DataStructure->Accelerometer_Z_velocity;
+
+	DataStructure->Accelerometer_X_position_past = DataStructure->Accelerometer_X_position;
+	DataStructure->Accelerometer_Y_position_past = DataStructure->Accelerometer_Y_position;
+	DataStructure->Accelerometer_Z_position_past = DataStructure->Accelerometer_Z_position;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
@@ -522,14 +572,37 @@ void Complementary_filter(struct MPU9250 *DataStructure,
 						  float weight_Yaw,
 						  float dt) {
 
-	DataStructure->Complementary_filter_Roll   = ( (1-weight_Roll_Pitch) * (DataStructure->Complementary_filter_Roll  + DataStructure->Gyroscope_X_dgs * dt )
-			                                   + (weight_Roll_Pitch * DataStructure->Accelerometer_Roll)  );
 
-	DataStructure->Complementary_filter_Pitch  = ( (1-weight_Roll_Pitch) * (DataStructure->Complementary_filter_Pitch + DataStructure->Gyroscope_Y_dgs * dt )
-											   + (weight_Roll_Pitch * DataStructure->Accelerometer_Pitch) );
+	if( (DataStructure->Gyroscope_quaternion.w > 0 && DataStructure->Accelerometer_quaternion.w < 0) || (DataStructure->Gyroscope_quaternion.w < 0 && DataStructure->Accelerometer_quaternion.w > 0) ) {
 
-	DataStructure->Complementary_filter_Yaw    = ( (1-weight_Yaw) * (DataStructure->Complementary_filter_Yaw   + DataStructure->Gyroscope_Z_dgs * dt )
-											   + (weight_Yaw * DataStructure->Magnetometer_Yaw)    );
+		DataStructure->Accelerometer_quaternion.w = -DataStructure->Accelerometer_quaternion.w;
+	}
+	if( (DataStructure->Gyroscope_quaternion.x > 0 && DataStructure->Accelerometer_quaternion.x < 0) || (DataStructure->Gyroscope_quaternion.x < 0 && DataStructure->Accelerometer_quaternion.x > 0) ) {
+
+		DataStructure->Accelerometer_quaternion.x = -DataStructure->Accelerometer_quaternion.x;
+	}
+	if( (DataStructure->Gyroscope_quaternion.y > 0 && DataStructure->Accelerometer_quaternion.y < 0) || (DataStructure->Gyroscope_quaternion.y < 0 && DataStructure->Accelerometer_quaternion.y > 0) ) {
+
+		DataStructure->Accelerometer_quaternion.y = -DataStructure->Accelerometer_quaternion.y;
+	}
+	if( (DataStructure->Gyroscope_quaternion.z > 0 && DataStructure->Accelerometer_quaternion.z < 0) || (DataStructure->Gyroscope_quaternion.z < 0 && DataStructure->Accelerometer_quaternion.z > 0) ) {
+
+		DataStructure->Accelerometer_quaternion.z = -DataStructure->Accelerometer_quaternion.z;
+	}
+
+	DataStructure->Complementary_quaternion.w  = ( (1-weight_Roll_Pitch) * (DataStructure->Complementary_quaternion.w + DataStructure->Gyroscope_quaternion_dot.w * dt )
+											   + (weight_Roll_Pitch * DataStructure->Accelerometer_quaternion.w)  );
+
+	DataStructure->Complementary_quaternion.x  = ( (1-weight_Roll_Pitch) * (DataStructure->Complementary_quaternion.x + DataStructure->Gyroscope_quaternion_dot.x * dt )
+											   + (weight_Roll_Pitch * DataStructure->Accelerometer_quaternion.x)  );
+
+	DataStructure->Complementary_quaternion.y  = ( (1-weight_Roll_Pitch) * (DataStructure->Complementary_quaternion.y + DataStructure->Gyroscope_quaternion_dot.y * dt )
+											   + (weight_Roll_Pitch * DataStructure->Accelerometer_quaternion.y)  );
+
+	DataStructure->Complementary_quaternion.z  = ( (1-weight_Roll_Pitch) * (DataStructure->Complementary_quaternion.z + DataStructure->Gyroscope_quaternion_dot.z * dt )
+											   + (weight_Roll_Pitch * DataStructure->Accelerometer_quaternion.z)  );
+
+	quaternion_normalise(&DataStructure->Complementary_quaternion);
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
@@ -540,6 +613,7 @@ void Kalman_filter(struct MPU9250 *DataStructure,
 				   float dt) {
 
 	/* Case 1: Update Q and R value */
+	/*
 	if( DataStructure->Kalman_P.kalman_Q != Q_Roll_Pitch || DataStructure->Kalman_P.kalman_R != R_Roll_Pitch ) {
 
 		Kalman_filter_init(&DataStructure->Kalman_R, Q_Roll_Pitch, R_Roll_Pitch);
@@ -548,11 +622,12 @@ void Kalman_filter(struct MPU9250 *DataStructure,
 
 		return;
 	}
+	*/
 
 	/* Case 2: */
-	DataStructure->Kalman_filter_Roll  = Kalman_filter_calculate(&DataStructure->Kalman_R, DataStructure->Accelerometer_Roll,  DataStructure->Gyroscope_X_dgs, dt);
-	DataStructure->Kalman_filter_Pitch = Kalman_filter_calculate(&DataStructure->Kalman_P, DataStructure->Accelerometer_Pitch, DataStructure->Gyroscope_Y_dgs, dt);
-	DataStructure->Kalman_filter_Yaw   = Kalman_filter_calculate(&DataStructure->Kalman_Y, DataStructure->Magnetometer_Yaw,    DataStructure->Gyroscope_Z_dgs, dt);
+	//DataStructure->Kalman_filter_Roll  = Kalman_filter_calculate(&DataStructure->Kalman_R, DataStructure->Accelerometer_Roll,  DataStructure->Gyroscope_X_dgs, dt);
+	//DataStructure->Kalman_filter_Pitch = Kalman_filter_calculate(&DataStructure->Kalman_P, DataStructure->Accelerometer_Pitch, DataStructure->Gyroscope_Y_dgs, dt);
+	//DataStructure->Kalman_filter_Yaw   = Kalman_filter_calculate(&DataStructure->Kalman_Y, DataStructure->Magnetometer_Yaw,    DataStructure->Gyroscope_Z_dgs, dt);
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */

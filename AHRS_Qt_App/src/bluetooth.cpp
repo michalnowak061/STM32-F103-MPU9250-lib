@@ -74,16 +74,21 @@ Bluetooth::Bluetooth()
     DT_Robot.Madgwick_filter_beta = 0;
     DT_Robot.Which_filter = 0;
 
-    DF_Robot.Complementary_roll = 0;
-    DF_Robot.Complementary_pitch = 0;
-    DF_Robot.Complementary_yaw = 0;
-    DF_Robot.Kalman_roll = 0;
-    DF_Robot.Kalman_pitch = 0;
-    DF_Robot.Kalman_yaw = 0;
+    DF_Robot.Complementary_w = 1;
+    DF_Robot.Complementary_x = 0;
+    DF_Robot.Complementary_y = 0;
+    DF_Robot.Complementary_z = 0;
+
+    DF_Robot.Kalman_w = 1;
+    DF_Robot.Kalman_x = 0;
+    DF_Robot.Kalman_y = 0;
+    DF_Robot.Kalman_z = 0;
+
     DF_Robot.Madgwick_w = 1;
     DF_Robot.Madgwick_x = 0;
     DF_Robot.Madgwick_y = 0;
     DF_Robot.Madgwick_z = 0;
+
     DF_Robot.g_x_dgs = 0;
     DF_Robot.g_y_dgs = 0;
     DF_Robot.g_z_dgs = 0;
@@ -181,8 +186,8 @@ void Bluetooth::Receive_frame()
         int8_t CRC_received = Data_frame_from_robot[DATA_FRAME_FROM_ROBOT_SIZE - 1];
         int8_t CRC_actual = CRC8_DataArray(Data_frame_from_robot, DATA_FRAME_FROM_ROBOT_SIZE - 1);
 
-        int16_t test_int = Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[20]),
-                                       static_cast<uint8_t>(Data_frame_from_robot[21]) );
+        int16_t test_int = Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[DATA_FRAME_FROM_ROBOT_SIZE-3]),
+                                       static_cast<uint8_t>(Data_frame_from_robot[DATA_FRAME_FROM_ROBOT_SIZE-2]) );
 
         if( CRC_actual == CRC_received && CRC_received != 0 && test_int == -32768) {
 
@@ -197,28 +202,32 @@ void Bluetooth::Receive_frame()
 void Bluetooth::Parse_data_frame()
 {
 
-    DF_Robot.Complementary_roll  = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[0]),
-                                                                    static_cast<uint8_t>(Data_frame_from_robot[1])  ) ) / 100;
-    DF_Robot.Complementary_pitch = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[2]),
-                                                                    static_cast<uint8_t>(Data_frame_from_robot[3])  ) ) / 100;
-    DF_Robot.Complementary_yaw   = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[4]),
-                                                                    static_cast<uint8_t>(Data_frame_from_robot[5])  ) ) / 100;
+    DF_Robot.Complementary_w = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[0]),
+                                                                static_cast<uint8_t>(Data_frame_from_robot[1])  ) ) / 1000;
+    DF_Robot.Complementary_x = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[2]),
+                                                                static_cast<uint8_t>(Data_frame_from_robot[3])  ) ) / 1000;
+    DF_Robot.Complementary_y = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[4]),
+                                                                static_cast<uint8_t>(Data_frame_from_robot[5])  ) ) / 1000;
+    DF_Robot.Complementary_z = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[6]),
+                                                                static_cast<uint8_t>(Data_frame_from_robot[7])  ) ) / 1000;
 
-    DF_Robot.Kalman_roll  = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[6]),
-                                                             static_cast<uint8_t>(Data_frame_from_robot[7])  ) ) / 100;
-    DF_Robot.Kalman_pitch = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[8]),
-                                                             static_cast<uint8_t>(Data_frame_from_robot[9])  ) ) / 100;
-    DF_Robot.Kalman_yaw   = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[10]),
-                                                             static_cast<uint8_t>(Data_frame_from_robot[11])  ) ) / 100;
+    DF_Robot.Kalman_w = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[8]),
+                                                         static_cast<uint8_t>(Data_frame_from_robot[9])  ) ) / 1000;
+    DF_Robot.Kalman_x = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[10]),
+                                                         static_cast<uint8_t>(Data_frame_from_robot[11])  ) ) / 1000;
+    DF_Robot.Kalman_y = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[12]),
+                                                         static_cast<uint8_t>(Data_frame_from_robot[13])  ) ) / 1000;
+    DF_Robot.Kalman_z = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[14]),
+                                                         static_cast<uint8_t>(Data_frame_from_robot[15])  ) ) / 1000;
 
-    DF_Robot.Madgwick_w = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[12]),
-                                                               static_cast<uint8_t>(Data_frame_from_robot[13])  ) ) / 1000;
-    DF_Robot.Madgwick_x = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[14]),
-                                                               static_cast<uint8_t>(Data_frame_from_robot[15])  ) ) / 1000;
-    DF_Robot.Madgwick_y   = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[16]),
-                                                               static_cast<uint8_t>(Data_frame_from_robot[17])  ) ) / 1000;
-    DF_Robot.Madgwick_z   = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[18]),
-                                                               static_cast<uint8_t>(Data_frame_from_robot[19])  ) ) / 1000;
+    DF_Robot.Madgwick_w = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[16]),
+                                                           static_cast<uint8_t>(Data_frame_from_robot[17])  ) ) / 1000;
+    DF_Robot.Madgwick_x = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[18]),
+                                                           static_cast<uint8_t>(Data_frame_from_robot[19])  ) ) / 1000;
+    DF_Robot.Madgwick_y = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[20]),
+                                                           static_cast<uint8_t>(Data_frame_from_robot[21])  ) ) / 1000;
+    DF_Robot.Madgwick_z = static_cast<double>( Merge_bytes(static_cast<uint8_t>(Data_frame_from_robot[22]),
+                                                           static_cast<uint8_t>(Data_frame_from_robot[23])  ) ) / 1000;
 
     emit Parsed_frame_OK_Signal();
 

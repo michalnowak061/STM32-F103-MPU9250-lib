@@ -9,7 +9,7 @@
 
 #include "math.h"
 
-#define DATA_FRAME_FROM_ROBOT_SIZE      23
+#define DATA_FRAME_FROM_ROBOT_SIZE      27
 #define DATA_FRAME_TO_ROBOT_SIZE        10
 
 #define POLYNOMIAL_9	0x31
@@ -39,8 +39,8 @@ int8_t Divide_bytes(int16_t data, uint8_t which_byte);
 
 struct Data_from_Robot
 {
-    double Complementary_roll, Complementary_pitch, Complementary_yaw;
-    double Kalman_roll, Kalman_pitch, Kalman_yaw;
+    double Complementary_w, Complementary_x, Complementary_y, Complementary_z;
+    double Kalman_w, Kalman_x, Kalman_y, Kalman_z;
     double Madgwick_w, Madgwick_x, Madgwick_y, Madgwick_z;
 
     double g_x_dgs, g_y_dgs, g_z_dgs;

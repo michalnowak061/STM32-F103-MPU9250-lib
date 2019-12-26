@@ -164,50 +164,20 @@ void MainWindow::MainWindow_Display_IMU_data()
     // calculate two new data points:
     double key = time.elapsed() / 1000.0; // time elapsed since start of demo, in seconds
 
-    // Fusion data
-    //double Filter_Roll  = convert(Data_from.Filter_roll);
-    //double Filter_Pitch = convert(Data_from.Filter_pitch);
-    //double Filter_Yaw   = convert(Data_from.Filter_yaw);
+    // Complementary filter
+    QVector3D Complementary_euler = QQuaternion(-Data_from.Complementary_w, -Data_from.Complementary_y, -Data_from.Complementary_z, -Data_from.Complementary_x).toEulerAngles();
+    double Complementary_Roll  = Complementary_euler.z();
+    double Complementary_Pitch = Complementary_euler.x();
+    double Complementary_Yaw   = Complementary_euler.y();
 
-    double Complementary_Roll  = Data_from.Complementary_roll;
-    double Complementary_Pitch = Data_from.Complementary_pitch;
-    double Complementary_Yaw   = Data_from.Complementary_yaw;
-
-    double Kalman_Roll  = Data_from.Kalman_roll;
-    double Kalman_Pitch = Data_from.Kalman_pitch;
-    double Kalman_Yaw   = Data_from.Kalman_yaw;
-
-    QVector3D Madgwick_euler = QQuaternion(Data_from.Madgwick_w,Data_from.Madgwick_x,Data_from.Madgwick_y,Data_from.Madgwick_z).toEulerAngles();
-    double Madgwick_Roll  = Madgwick_euler.x();
-    double Madgwick_Pitch = Madgwick_euler.y();
-    double Madgwick_Yaw   = Madgwick_euler.z();
-
-    // add data to lines:
     if(Show_Gyroscope_X == true) ui->Complementary_Graph->graph(0)->addData(key, Complementary_Roll);
     if(Show_Gyroscope_Y == true) ui->Complementary_Graph->graph(1)->addData(key, Complementary_Pitch);
     if(Show_Gyroscope_Z == true) ui->Complementary_Graph->graph(2)->addData(key, Complementary_Yaw);
-
-    if(Show_Accelerometer_X == true) ui->Kalman_Graph->graph(0)->addData(key, Kalman_Roll);
-    if(Show_Accelerometer_Y == true) ui->Kalman_Graph->graph(1)->addData(key, Kalman_Pitch);
-    if(Show_Accelerometer_Z == true) ui->Kalman_Graph->graph(2)->addData(key, Kalman_Yaw);
-
-    if(Show_Magnetometer_X == true) ui->Madgwick_Graph->graph(0)->addData(key, Madgwick_Roll);
-    if(Show_Magnetometer_Y == true) ui->Madgwick_Graph->graph(1)->addData(key, Madgwick_Pitch);
-    if(Show_Magnetometer_Z == true) ui->Madgwick_Graph->graph(2)->addData(key, Madgwick_Yaw);
 
     ui->Complementary_Graph->graph(0)->rescaleValueAxis(true);
     ui->Complementary_Graph->graph(1)->rescaleValueAxis(true);
     ui->Complementary_Graph->graph(2)->rescaleValueAxis(true);
 
-    ui->Kalman_Graph->graph(0)->rescaleValueAxis(true);
-    ui->Kalman_Graph->graph(1)->rescaleValueAxis(true);
-    ui->Kalman_Graph->graph(2)->rescaleValueAxis(true);
-
-    ui->Madgwick_Graph->graph(0)->rescaleValueAxis(true);
-    ui->Madgwick_Graph->graph(1)->rescaleValueAxis(true);
-    ui->Madgwick_Graph->graph(2)->rescaleValueAxis(true);
-
-    // make key axis range scroll with the data (at a constant range size of 8):
     ui->Complementary_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
 
     if( Complementary_Graph_Run == true ) {
@@ -218,6 +188,27 @@ void MainWindow::MainWindow_Display_IMU_data()
         ui->lcdNumber_Gyroscope_Y->display(Complementary_Pitch);
         ui->lcdNumber_Gyroscope_Z->display(Complementary_Yaw);
     }
+
+    ui->Complementary_Visualisation->setQuaternion(Data_from.Complementary_w, Data_from.Complementary_x, Data_from.Complementary_y, Data_from.Complementary_z);
+    ui->Complementary_Visualisation->show();
+
+    ui->lcdNumber_Complementary_Roll->display(Complementary_Roll);
+    ui->lcdNumber_Complementary_Pitch->display(Complementary_Pitch);
+    ui->lcdNumber_Complementary_Yaw->display(Complementary_Yaw);
+
+    // Kalman filter
+    QVector3D Kalman_euler = QQuaternion(-Data_from.Kalman_w, -Data_from.Kalman_y, -Data_from.Kalman_z, -Data_from.Kalman_x).toEulerAngles();
+    double Kalman_Roll  = Kalman_euler.z();
+    double Kalman_Pitch = Kalman_euler.x();
+    double Kalman_Yaw   = Kalman_euler.y();
+
+    if(Show_Accelerometer_X == true) ui->Kalman_Graph->graph(0)->addData(key, Kalman_Roll);
+    if(Show_Accelerometer_Y == true) ui->Kalman_Graph->graph(1)->addData(key, Kalman_Pitch);
+    if(Show_Accelerometer_Z == true) ui->Kalman_Graph->graph(2)->addData(key, Kalman_Yaw);
+
+    ui->Kalman_Graph->graph(0)->rescaleValueAxis(true);
+    ui->Kalman_Graph->graph(1)->rescaleValueAxis(true);
+    ui->Kalman_Graph->graph(2)->rescaleValueAxis(true);
 
     ui->Kalman_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
 
@@ -230,7 +221,26 @@ void MainWindow::MainWindow_Display_IMU_data()
         ui->lcdNumber_Accelerometer_Z->display(Kalman_Yaw);
     }
 
-    ui->Kalman_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
+    ui->Kalman_Visualisation->setQuaternion(Data_from.Kalman_w, Data_from.Kalman_x, Data_from.Kalman_y, Data_from.Kalman_z);
+    ui->Kalman_Visualisation->show();
+
+    ui->lcdNumber_Kalman_Roll->display(Kalman_Roll);
+    ui->lcdNumber_Kalman_Pitch->display(Kalman_Pitch);
+    ui->lcdNumber_Kalman_Yaw->display(Kalman_Yaw);
+
+    // Madgwick filter
+    QVector3D Madgwick_euler = QQuaternion(-Data_from.Madgwick_w, -Data_from.Madgwick_y, -Data_from.Madgwick_z, -Data_from.Madgwick_x).toEulerAngles();
+    double Madgwick_Roll  = Madgwick_euler.z();
+    double Madgwick_Pitch = Madgwick_euler.x();
+    double Madgwick_Yaw   = Madgwick_euler.y();
+
+    if(Show_Magnetometer_X == true) ui->Madgwick_Graph->graph(0)->addData(key, Madgwick_Roll);
+    if(Show_Magnetometer_Y == true) ui->Madgwick_Graph->graph(1)->addData(key, Madgwick_Pitch);
+    if(Show_Magnetometer_Z == true) ui->Madgwick_Graph->graph(2)->addData(key, Madgwick_Yaw);
+
+    ui->Madgwick_Graph->graph(0)->rescaleValueAxis(true);
+    ui->Madgwick_Graph->graph(1)->rescaleValueAxis(true);
+    ui->Madgwick_Graph->graph(2)->rescaleValueAxis(true);
 
     ui->Madgwick_Graph->xAxis->setRange(key, 30, Qt::AlignRight);
 
@@ -243,30 +253,13 @@ void MainWindow::MainWindow_Display_IMU_data()
         ui->lcdNumber_Magnetometer_Z->display(Madgwick_Yaw);
     }
 
-    //ui->Complementary_Visualisation->setZRotation(-Complementary_Roll);
-    //ui->Complementary_Visualisation->setXRotation(-Complementary_Pitch);
-    //ui->Complementary_Visualisation->setYRotation(Complementary_Yaw);
-
-    //ui->lcdNumber_Complementary_Roll->display(Complementary_Roll);
-    //ui->lcdNumber_Complementary_Pitch->display(Complementary_Pitch);
-    //ui->lcdNumber_Complementary_Yaw->display(Complementary_Yaw);
-
-    //ui->Kalman_Visualisation->setZRotation(-Kalman_Roll);
-    //ui->Kalman_Visualisation->setXRotation(-Kalman_Pitch);
-    //ui->Kalman_Visualisation->setYRotation(Kalman_Yaw);
-
-    ui->lcdNumber_Kalman_Roll->display(Kalman_Roll);
-    ui->lcdNumber_Kalman_Pitch->display(Kalman_Pitch);
-    ui->lcdNumber_Kalman_Yaw->display(Kalman_Yaw);
-
     ui->Madgwick_Visualisation->setQuaternion(Data_from.Madgwick_w,Data_from.Madgwick_x,Data_from.Madgwick_y,Data_from.Madgwick_z);
+    //ui->Madgwick_Visualisation->setQuaternion(Data_from.Madgwick_z,Data_from.Madgwick_y,Data_from.Madgwick_x,Data_from.Madgwick_w);
     ui->Madgwick_Visualisation->show();
 
     ui->lcdNumber_Madgwick_Roll->display(Madgwick_Roll);
     ui->lcdNumber_Madgwick_Pitch->display(Madgwick_Pitch);
     ui->lcdNumber_Madgwick_Yaw->display(Madgwick_Yaw);
-
-    //data_time = QTime::currentTime();
 
     // Print data frame
     QString data_line = QString::number(++data_iterator) + " " +
@@ -278,6 +271,14 @@ void MainWindow::MainWindow_Display_IMU_data()
 
     ui->textBrowser_Data->append(data_line);
     Data_lines.push_back(data_line);
+
+    qDebug() << '\n';
+    qDebug() << "Complementary: "<< "w: " << Data_from.Complementary_w << "x: " << Data_from.Complementary_x << "y: " << Data_from.Complementary_y << "z: " << Data_from.Complementary_z;
+    qDebug() << "Kalman: " << "      w: " << Data_from.Kalman_w << "       x: " << Data_from.Kalman_x << "       y: " << Data_from.Kalman_y << "       z: " << Data_from.Kalman_z;
+    qDebug() << "Madgwick: " << "    w: " << Data_from.Madgwick_w << "     x: " << Data_from.Madgwick_x << "     y: " << Data_from.Madgwick_y << "     z: " << Data_from.Madgwick_z;
+    qDebug() << '\n';
+    qDebug() << "Accelerometer_velocity: " << Data_from.Madgwick_w << Data_from.Madgwick_x << Data_from.Madgwick_y;
+    qDebug() << "Accelerometer_position: " << Data_from.Kalman_w << Data_from.Kalman_x << Data_from.Kalman_y;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

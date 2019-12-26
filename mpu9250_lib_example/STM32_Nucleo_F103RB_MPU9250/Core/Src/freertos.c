@@ -70,8 +70,8 @@ float g_x_offset_global = 0, g_y_offset_global = 0, g_z_offset_global = 0;
 float m_x_offset_global = 0, m_y_offset_global = 0, m_z_offset_global = 0;
 float m_x_scale_global = 0, m_y_scale_global = 0, m_z_scale_global = 0;
 
-float Complementary_Roll_global = 0, Complementary_Pitch_global = 0, Complementary_Yaw_global = 0;
-float Kalman_Roll_global = 0, Kalman_Pitch_global = 0, Kalman_Yaw_global = 0;
+double Complementary_q_w = 1, Complementary_q_x = 0, Complementary_q_y = 0, Complementary_q_z = 0;
+double Kalman_q_w = 1, Kalman_q_x = 0, Kalman_q_y = 0, Kalman_q_z = 0;
 double Madgwick_q_w = 1, Madgwick_q_x = 0, Madgwick_q_y = 0, Madgwick_q_z = 0;
 
 float Filter_weight_RP_global = COMPLEMENTARY_FILTER_WEIGHT_RP;
@@ -185,9 +185,9 @@ void Start_USART_Task(void const *argument) {
 	for (;;) {
 
 		HC05_Fill_Data_frame_to_PC(&DT_PC, Data_to_PC,
-				Complementary_Roll_global, Complementary_Pitch_global, Complementary_Yaw_global,
-				Kalman_Roll_global, Kalman_Pitch_global,Kalman_Yaw_global,
-				Madgwick_q_w, Madgwick_q_x, Madgwick_q_y, Madgwick_q_z);
+									Complementary_q_w, Complementary_q_x, Complementary_q_y, Complementary_q_z,
+									Kalman_q_w, Kalman_q_x, Kalman_q_y, Kalman_q_z,
+									Madgwick_q_w, Madgwick_q_x, Madgwick_q_y, Madgwick_q_z);
 
 		HAL_UART_Transmit_DMA(HC05_handle, Data_to_PC, DATA_FRAME_TO_PC_SIZE);
 
@@ -288,9 +288,9 @@ void Start_IMU_Task(void const *argument) {
 			g_x_dgs_global = mpu1.Gyroscope_X_dgs, g_y_dgs_global = mpu1.Gyroscope_Y_dgs, g_z_dgs_global = mpu1.Gyroscope_Z_dgs;
 			m_x_uT_global = mpu1.Magnetometer_X_uT, m_y_uT_global = mpu1.Magnetometer_Y_uT, m_z_uT_global = mpu1.Magnetometer_Z_uT;
 
-			a_roll_global = mpu1.Accelerometer_Roll, a_pitch_global = mpu1.Accelerometer_Pitch;
+			//a_roll_global = mpu1.Accelerometer_Roll, a_pitch_global = mpu1.Accelerometer_Pitch;
 			//g_roll_global = mpu1.Gyroscope_Roll, g_pitch_global = mpu1.Gyroscope_Pitch, g_yaw_global = mpu1.Gyroscope_Yaw;
-			m_yaw_global = mpu1.Magnetometer_Yaw;
+			//m_yaw_global = mpu1.Magnetometer_Yaw;
 
 			/* Case 3: Filters using */
 			Complementary_filter(&mpu1, Filter_weight_RP_global, Filter_weight_Y_global, dt);
@@ -302,23 +302,55 @@ void Start_IMU_Task(void const *argument) {
 			//Mahony_filter(&mpu1, dt);
 
 			/* Filters data */
+			//Complementary_q_w = mpu1.Gyroscope_quaternion.w;
+			//Complementary_q_x = mpu1.Gyroscope_quaternion.x;
+			//Complementary_q_y = mpu1.Gyroscope_quaternion.y;
+			//Complementary_q_z = mpu1.Gyroscope_quaternion.z;
 
-			//Complementary_Roll_global  = mpu1.Complementary_filter_Roll;
-			//Complementary_Pitch_global = mpu1.Complementary_filter_Pitch;
-			//Complementary_Yaw_global   = mpu1.Complementary_filter_Yaw;
+			//Complementary_q_w = mpu1.Accelerometer_quaternion.w;
+			//Complementary_q_x = mpu1.Accelerometer_quaternion.x;
+			//Complementary_q_y = mpu1.Accelerometer_quaternion.y;
+			//Complementary_q_z = mpu1.Accelerometer_quaternion.z;
 
-			Complementary_Roll_global  = mpu1.Gyroscope_euler.roll;
-			Complementary_Pitch_global = mpu1.Gyroscope_euler.pitch;
-			Complementary_Yaw_global   = mpu1.Gyroscope_euler.yaw;
+			//Complementary_q_w = mpu1.Magnetometer_quaternion.w;
+			//Complementary_q_x = mpu1.Magnetometer_quaternion.x;
+			//Complementary_q_y = mpu1.Magnetometer_quaternion.y;
+			//Complementary_q_z = mpu1.Magnetometer_quaternion.z;
 
-			Kalman_Roll_global  = mpu1.Kalman_filter_Roll;
-			Kalman_Pitch_global = mpu1.Kalman_filter_Pitch;
-			Kalman_Yaw_global   = mpu1.Kalman_filter_Yaw;
+			//Complementary_q_w = mpu1.Complementary_quaternion.w;
+			//Complementary_q_x = mpu1.Complementary_quaternion.x;
+			//Complementary_q_y = mpu1.Complementary_quaternion.y;
+			//Complementary_q_z = mpu1.Complementary_quaternion.z;
 
-			Madgwick_q_w = mpu1.Madgwick_quaternion.w;
-			Madgwick_q_x = mpu1.Madgwick_quaternion.x;
-			Madgwick_q_y = mpu1.Madgwick_quaternion.y;
-			Madgwick_q_z = mpu1.Madgwick_quaternion.z;
+			//Kalman_q_w = mpu1.Kalman_quaternion.w;
+			//Kalman_q_x = mpu1.Kalman_quaternion.x;
+			//Kalman_q_y = mpu1.Kalman_quaternion.y;
+			//Kalman_q_z = mpu1.Kalman_quaternion.z;
+
+			//Kalman_q_w = mpu1.Accelerometer_quaternion.w;
+			//Kalman_q_x = mpu1.Accelerometer_quaternion.x;
+			//Kalman_q_y = mpu1.Accelerometer_quaternion.y;
+			//Kalman_q_z = mpu1.Accelerometer_quaternion.z;
+
+			Kalman_q_w = mpu1.Accelerometer_X_position;
+			Kalman_q_x = mpu1.Accelerometer_Y_position;
+			Kalman_q_y = mpu1.Accelerometer_Z_position;
+			Kalman_q_z = 0;
+
+			//Madgwick_q_w = mpu1.Madgwick_quaternion.w;
+			//Madgwick_q_x = mpu1.Madgwick_quaternion.x;
+			//Madgwick_q_y = mpu1.Madgwick_quaternion.y;
+			//Madgwick_q_z = mpu1.Madgwick_quaternion.z;
+
+			//Madgwick_q_w = mpu1.Magnetometer_quaternion.w;
+			//Madgwick_q_x = mpu1.Magnetometer_quaternion.x;
+			//Madgwick_q_y = mpu1.Magnetometer_quaternion.y;
+			//Madgwick_q_z = mpu1.Magnetometer_quaternion.z;
+
+			Madgwick_q_w = mpu1.Accelerometer_X_velocity;
+			Madgwick_q_x = mpu1.Accelerometer_Y_velocity;
+			Madgwick_q_y = mpu1.Accelerometer_Z_velocity;
+			Madgwick_q_z = 0;
 		}
 
 		osDelay(10);

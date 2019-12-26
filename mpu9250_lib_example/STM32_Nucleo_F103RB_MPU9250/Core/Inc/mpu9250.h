@@ -19,6 +19,9 @@
 
 #define MAGNETIC_DECLINATION	( 4 + (29 / 60) ) /* <- for Boleslawiec */
 
+#define MS_TO_S		1000
+#define G_TO_MS2	9.8115
+
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 #define MPU9250_SELF_TEST_X_GYRO	0x00
@@ -224,48 +227,53 @@ struct MPU9250 {
 
 	MPU9250_Device_number Device_number;
 	uint8_t Device_addres;
-	uint8_t Magnetometer_addres;
-	float Magnetic_declination;
-
-	int16_t Accelerometer_sensitivity_factor;
-	float Magnetometer_sesitivity_factor;
-	float Magnetometer_ASAX, Magnetometer_ASAY, Magnetometer_ASAZ;
-
-	int16_t Accelerometer_X, Accelerometer_Y, Accelerometer_Z;
-	int16_t Magnetometer_X, Magnetometer_Y, Magnetometer_Z;
-
-	float Accelerometer_X_offset, Accelerometer_Y_offset, Accelerometer_Z_offset;
-	float Magnetometer_X_offset, Magnetometer_Y_offset, Magnetometer_Z_offset;
-	float Magnetometer_X_scale, Magnetometer_Y_scale, Magnetometer_Z_scale;
-	float Magnetometer_Yaw_offset;
-
-	float Accelerometer_X_g, Accelerometer_Y_g, Accelerometer_Z_g;
-	float Magnetometer_X_uT,  Magnetometer_Y_uT,  Magnetometer_Z_uT;
-
-	float Accelerometer_Roll, Accelerometer_Pitch;
-	float Magnetometer_Roll, Magnetometer_Pitch, Magnetometer_Yaw;
 
 	/* Gyroscope variables */
 	int16_t Gyroscope_sensitivity_factor;
 	int16_t Gyroscope_X, Gyroscope_Y, Gyroscope_Z;
-	double Gyroscope_X_dgs, Gyroscope_Y_dgs, Gyroscope_Z_dgs;
 	double Gyroscope_X_offset, Gyroscope_Y_offset, Gyroscope_Z_offset;
+	double Gyroscope_X_dgs, Gyroscope_Y_dgs, Gyroscope_Z_dgs;
 	struct quaternion Gyroscope_quaternion;
 	struct quaternion Gyroscope_quaternion_dot;
 	struct euler Gyroscope_euler;
 
+	/* Accelerometer variables */
+	int16_t Accelerometer_sensitivity_factor;
+	int16_t Accelerometer_X, Accelerometer_Y, Accelerometer_Z;
+	double Accelerometer_X_offset, Accelerometer_Y_offset, Accelerometer_Z_offset;
+	double Accelerometer_X_g, Accelerometer_Y_g, Accelerometer_Z_g;
+	double Accelerometer_X_g_past, Accelerometer_Y_g_past, Accelerometer_Z_g_past;
+	struct quaternion Accelerometer_quaternion;
+	struct euler Accelerometer_euler;
+	double Accelerometer_X_velocity, Accelerometer_Y_velocity, Accelerometer_Z_velocity;
+	double Accelerometer_X_velocity_past, Accelerometer_Y_velocity_past, Accelerometer_Z_velocity_past;
+	double Accelerometer_X_position, Accelerometer_Y_position, Accelerometer_Z_position;
+	double Accelerometer_X_position_past, Accelerometer_Y_position_past, Accelerometer_Z_position_past;
+
+	/* Magnetometer variables */
+	uint8_t Magnetometer_addres;
+	float Magnetic_declination;
+	float Magnetometer_sesitivity_factor;
+	float Magnetometer_ASAX, Magnetometer_ASAY, Magnetometer_ASAZ;
+	int16_t Magnetometer_X, Magnetometer_Y, Magnetometer_Z;
+	float Magnetometer_X_offset, Magnetometer_Y_offset, Magnetometer_Z_offset;
+	float Magnetometer_X_scale, Magnetometer_Y_scale, Magnetometer_Z_scale;
+	float Magnetometer_Yaw_offset;
+	float Magnetometer_X_uT, Magnetometer_Y_uT, Magnetometer_Z_uT;
+	struct quaternion Magnetometer_quaternion;
+	struct euler Magnetometer_euler;
 
 	/* Complementary filter variables */
-	float Complementary_filter_Roll, Complementary_filter_Pitch, Complementary_filter_Yaw;
+	struct quaternion Complementary_quaternion;
+	struct euler Complementary_euler;
 
 	/* Kalman filter variables */
-	struct Kalman Kalman_R, Kalman_P, Kalman_Y;
-	float Kalman_filter_Roll, Kalman_filter_Pitch, Kalman_filter_Yaw;
+	struct quaternion Kalman_quaternion;
+	struct euler Kalman_euler;
 
 	/* Madgwick filter variables */
 	struct quaternion Madgwick_quaternion;
 	struct euler Madgwick_euler;
-	//float Madgwick_filter_Roll, Madgwick_filter_Pitch, Madgwick_filter_Yaw;
 
 	/* Mahony filter variables */
 	float Mahony_filter_Roll, Mahony_filter_Pitch, Mahony_filter_Yaw;
