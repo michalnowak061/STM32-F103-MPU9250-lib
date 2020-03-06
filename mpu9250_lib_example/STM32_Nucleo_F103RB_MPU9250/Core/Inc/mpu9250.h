@@ -13,7 +13,6 @@
 
 #include "quaternion.h"
 
-#include "kalman.h"
 #include "MadgwickAHRS.h"
 #include "MahonyAHRS.h"
 
@@ -21,6 +20,8 @@
 
 #define MS_TO_S		1000
 #define G_TO_MS2	9.8115
+#define DEG_TO_RAD	(M_PI / 180)
+#define RAD_TO_DEG	(180 / M_PI)
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
@@ -231,24 +232,22 @@ struct MPU9250 {
 	/* Gyroscope variables */
 	int16_t Gyroscope_sensitivity_factor;
 	int16_t Gyroscope_X, Gyroscope_Y, Gyroscope_Z;
-	double Gyroscope_X_offset, Gyroscope_Y_offset, Gyroscope_Z_offset;
-	double Gyroscope_X_dgs, Gyroscope_Y_dgs, Gyroscope_Z_dgs;
-	struct quaternion Gyroscope_quaternion;
-	struct quaternion Gyroscope_quaternion_dot;
-	struct euler Gyroscope_euler;
+	float Gyroscope_X_offset, Gyroscope_Y_offset, Gyroscope_Z_offset;
+	float Gyroscope_X_dgs, Gyroscope_Y_dgs, Gyroscope_Z_dgs;
 
 	/* Accelerometer variables */
 	int16_t Accelerometer_sensitivity_factor;
 	int16_t Accelerometer_X, Accelerometer_Y, Accelerometer_Z;
-	double Accelerometer_X_offset, Accelerometer_Y_offset, Accelerometer_Z_offset;
-	double Accelerometer_X_g, Accelerometer_Y_g, Accelerometer_Z_g;
-	double Accelerometer_X_g_past, Accelerometer_Y_g_past, Accelerometer_Z_g_past;
-	struct quaternion Accelerometer_quaternion;
-	struct euler Accelerometer_euler;
-	double Accelerometer_X_velocity, Accelerometer_Y_velocity, Accelerometer_Z_velocity;
-	double Accelerometer_X_velocity_past, Accelerometer_Y_velocity_past, Accelerometer_Z_velocity_past;
-	double Accelerometer_X_position, Accelerometer_Y_position, Accelerometer_Z_position;
-	double Accelerometer_X_position_past, Accelerometer_Y_position_past, Accelerometer_Z_position_past;
+	float Accelerometer_X_offset, Accelerometer_Y_offset, Accelerometer_Z_offset;
+
+	struct vector Accelerometer_vector_g;
+	struct vector Accelerometer_vector_g_offset;
+	struct vector Accelerometer_vector_without_g;
+	struct vector Accelerometer_vector_without_g_past;
+
+	struct vector Accelerometer_vector_velocity;
+	struct vector Accelerometer_vector_velocity_past;
+	struct vector Accelerometer_vector_position;
 
 	/* Magnetometer variables */
 	uint8_t Magnetometer_addres;
@@ -260,16 +259,6 @@ struct MPU9250 {
 	float Magnetometer_X_scale, Magnetometer_Y_scale, Magnetometer_Z_scale;
 	float Magnetometer_Yaw_offset;
 	float Magnetometer_X_uT, Magnetometer_Y_uT, Magnetometer_Z_uT;
-	struct quaternion Magnetometer_quaternion;
-	struct euler Magnetometer_euler;
-
-	/* Complementary filter variables */
-	struct quaternion Complementary_quaternion;
-	struct euler Complementary_euler;
-
-	/* Kalman filter variables */
-	struct quaternion Kalman_quaternion;
-	struct euler Kalman_euler;
 
 	/* Madgwick filter variables */
 	struct quaternion Madgwick_quaternion;
@@ -282,25 +271,25 @@ struct MPU9250 {
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 MPU9250_Error_code MPU9250_Accelerometer_Configuration(I2C_HandleTypeDef *I2Cx,
-													   struct MPU9250 *DataStructure,
+													   struct MPU9250 *mpu,
 													   MPU9250_Acce_range Range);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 MPU9250_Error_code MPU9250_Gyroscope_Configuration(I2C_HandleTypeDef *I2Cx,
-												   struct MPU9250 *DataStructure,
+												   struct MPU9250 *mpu,
 												   MPU9250_Gyro_range Range);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 
 MPU9250_Error_code MPU9250_Magnetometer_Configuration(I2C_HandleTypeDef *I2Cx,
-												      struct MPU9250 *DataStructure);
+												      struct MPU9250 *mpu);
 
 /* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
 
 MPU9250_Error_code MPU9250_Init(I2C_HandleTypeDef *I2Cx,
-								struct MPU9250 *DataStructure,
+								struct MPU9250 *mpu,
 								MPU9250_Device_number Number,
 								MPU9250_Acce_range Acce_range,
 								MPU9250_Gyro_range Gyro_range);
@@ -308,72 +297,47 @@ MPU9250_Error_code MPU9250_Init(I2C_HandleTypeDef *I2Cx,
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 MPU9250_Error_code MPU9250_Read_Accelerometer(I2C_HandleTypeDef *I2Cx,
-											  struct MPU9250 *DataStructure);
+											  struct MPU9250 *mpu);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 MPU9250_Error_code MPU9250_Read_Gyroscope(I2C_HandleTypeDef *I2Cx,
-										  struct MPU9250 *DataStructure);
+										  struct MPU9250 *mpu);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 MPU9250_Error_code MPU9250_Read_Magnetometer(I2C_HandleTypeDef *I2Cx,
-										     struct MPU9250 *DataStructure);
+										     struct MPU9250 *mpu);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 void MPU9250_Calibration_Acce(I2C_HandleTypeDef *I2Cx,
-	      	  	  	  	  	  	  	        struct MPU9250 *DataStructure);
+	      	  	  	  	  	  struct MPU9250 *mpu);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 void MPU9250_Calibration_Gyro(I2C_HandleTypeDef *I2Cx,
-	      	  	  	  	  	  	  	        struct MPU9250 *DataStructure);
+	      	  	  	  	  	  struct MPU9250 *mpu);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 void MPU9250_Calibration_Mag(I2C_HandleTypeDef *I2Cx,
-	      	  	  	  	  	  	  	        struct MPU9250 *DataStructure);
+	      	  	  	  	  	 struct MPU9250 *mpu);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 void MPU9250_Set_Offsets(I2C_HandleTypeDef *I2Cx,
-	  	  	  	   	   	   	   	   	   struct MPU9250 *DataStructure,
+	  	  	  	   	   	   	   	   	   struct MPU9250 *mpu,
 									   float Acce_X_offset, float Acce_Y_offset, float Acce_Z_offset,
 									   float Gyro_X_offset, float Gyro_Y_offset, float Gyro_Z_offset,
-									   float Mag_X_offset, float Mag_Y_offset, float Mag_Z_offset,
-									   float Mag_X_scale, float Mag_Y_scale, float Mag_Z_scale);
+									   float Mag_X_offset,  float Mag_Y_offset,  float Mag_Z_offset,
+									   float Mag_X_scale,   float Mag_Y_scale,   float Mag_Z_scale);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
-void MPU9250_Calculate_RPY(I2C_HandleTypeDef *I2Cx,
-	      	  	  	  	  	  	  		 struct MPU9250 *DataStructure,
-										 double dt);
-
-/* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
-
-void Complementary_filter(struct MPU9250 *DataStructure,
-						  float weight_Roll_Pitch,
-						  float weight_Yaw,
-						  float dt);
-
-/* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
-
-void Kalman_filter(struct MPU9250 *DataStructure,
-				   float Q_Roll_Pitch, float R_Roll_Pitch,
-				   float Q_Yaw, float R_Yaw,
-				   float dt);
-
-/* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
-
-void Madgwick_filter(struct MPU9250 *DataStructure,
-					 float beta,
-					 float dt);
-
-/* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
-
-void Mahony_filter(struct MPU9250 *DataStructure,
-		           float dt);
+void MPU9250_Update(I2C_HandleTypeDef *I2Cx,
+				    struct MPU9250 *mpu,
+				    float dt);
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 

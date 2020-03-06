@@ -1,3 +1,0 @@
-madgwick.c:50:6:Madgwick_update	184	static
-madgwick.c:156:6:Madgwick_updateIMU	128	static
-madgwick.c:233:7:invSqrt_my	32	static

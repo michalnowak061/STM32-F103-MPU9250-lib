@@ -254,7 +254,6 @@ void MainWindow::MainWindow_Display_IMU_data()
     }
 
     ui->Madgwick_Visualisation->setQuaternion(Data_from.Madgwick_w,Data_from.Madgwick_x,Data_from.Madgwick_y,Data_from.Madgwick_z);
-    //ui->Madgwick_Visualisation->setQuaternion(Data_from.Madgwick_z,Data_from.Madgwick_y,Data_from.Madgwick_x,Data_from.Madgwick_w);
     ui->Madgwick_Visualisation->show();
 
     ui->lcdNumber_Madgwick_Roll->display(Madgwick_Roll);

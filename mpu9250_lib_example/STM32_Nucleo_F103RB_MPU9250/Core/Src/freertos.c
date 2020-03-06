@@ -29,6 +29,10 @@
 #include "mpu9250.h"
 #include "hc05.h"
 
+#include "stdio.h"
+
+//#include "stdio.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -38,13 +42,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define COMPLEMENTARY_FILTER_WEIGHT_RP 0.03
-#define COMPLEMENTARY_FILTER_WEIGHT_Y  0.02
-#define KALMAN_PROCESS_VARIANCE_RP		0.3
-#define KALMAN_MEASURE_VARIANCE_RP		300
-#define KALMAN_PROCESS_VARIANCE_Y		0.04
-#define KALMAN_MEASURE_VARIANCE_Y		400
-#define MADGWICK_BETA					0.2
 
 /* USER CODE END PD */
 
@@ -57,32 +54,20 @@
 /* USER CODE BEGIN Variables */
 
 /* ------------> MPU9250 variables <------------- */
-float a_x_g_global = 0, a_y_g_global = 0, a_z_g_global = 0;
-float g_x_dgs_global = 0, g_y_dgs_global = 0, g_z_dgs_global = 0;
-float m_x_uT_global = 0, m_y_uT_global = 0, m_z_uT_global = 0;
-
-float a_roll_global = 0, a_pitch_global = 0;
-float g_roll_global  = 0, g_pitch_global = 0, g_yaw_global   = 0;
-float m_yaw_global = 0;
-
 float a_x_offset_global = 0, a_y_offset_global = 0, a_z_offset_global = 0;
 float g_x_offset_global = 0, g_y_offset_global = 0, g_z_offset_global = 0;
 float m_x_offset_global = 0, m_y_offset_global = 0, m_z_offset_global = 0;
 float m_x_scale_global = 0, m_y_scale_global = 0, m_z_scale_global = 0;
 
-double Complementary_q_w = 1, Complementary_q_x = 0, Complementary_q_y = 0, Complementary_q_z = 0;
-double Kalman_q_w = 1, Kalman_q_x = 0, Kalman_q_y = 0, Kalman_q_z = 0;
-double Madgwick_q_w = 1, Madgwick_q_x = 0, Madgwick_q_y = 0, Madgwick_q_z = 0;
+float a_g_x = 0, a_g_y = 0, a_g_z = 0;
+float a_g_offset_x = 0, a_g_offset_y = 0, a_g_offset_z = 0;
+float a_wihout_g_x = 0, a_wihout_g_y = 0, a_wihout_g_z = 0;
+float a_velocity_x = 0, a_velocity_y = 0, a_velocity_z = 0;
+float a_position_x = 0, a_position_y = 0, a_position_z = 0;
 
-float Filter_weight_RP_global = COMPLEMENTARY_FILTER_WEIGHT_RP;
-float Filter_weight_Y_global  = COMPLEMENTARY_FILTER_WEIGHT_Y;
-float Kalman_filter_process_variance_RP = KALMAN_PROCESS_VARIANCE_RP;
-float Kalman_filter_measure_variance_RP = KALMAN_MEASURE_VARIANCE_RP;
-float Kalman_filter_process_variance_Y = KALMAN_PROCESS_VARIANCE_Y;
-float Kalman_filter_measure_variance_Y = KALMAN_MEASURE_VARIANCE_Y;
-float Madgwick_filter_beta = MADGWICK_BETA;
+float Madgwick_q_w = 1, Madgwick_q_x = 0, Madgwick_q_y = 0, Madgwick_q_z = 0;
 
-double dt = 0;
+float dt = 0;
 
 /* -----------> Communication variables <----------- */
 UART_HandleTypeDef *HC05_handle = &huart1;
@@ -175,8 +160,9 @@ void MX_FREERTOS_Init(void) {
 * @retval None
 */
 /* USER CODE END Header_Start_USART_Task */
-void Start_USART_Task(void const *argument) {
-	/* USER CODE BEGIN Start_USART_Task */
+void Start_USART_Task(void const * argument)
+{
+  /* USER CODE BEGIN Start_USART_Task */
 
 	/* Start receiving */
 	HAL_UART_Receive_DMA(HC05_handle, Data_from_PC, DATA_FRAME_FROM_PC_SIZE);
@@ -185,16 +171,58 @@ void Start_USART_Task(void const *argument) {
 	for (;;) {
 
 		HC05_Fill_Data_frame_to_PC(&DT_PC, Data_to_PC,
-									Complementary_q_w, Complementary_q_x, Complementary_q_y, Complementary_q_z,
-									Kalman_q_w, Kalman_q_x, Kalman_q_y, Kalman_q_z,
+									a_position_x, a_position_y, a_position_z, 0,
+									0, 0, 0, 0,
+									/*a_position_x, a_position_y, a_position_z, 0*/
 									Madgwick_q_w, Madgwick_q_x, Madgwick_q_y, Madgwick_q_z);
 
 		HAL_UART_Transmit_DMA(HC05_handle, Data_to_PC, DATA_FRAME_TO_PC_SIZE);
 
+		uint16_t cnt[10];
+		uint8_t  data[50];
+		uint16_t size = 0;
+
+		cnt[0] = (uint16_t)(a_wihout_g_x * 1000);
+		cnt[1] = (uint16_t)(a_wihout_g_y * 1000);
+		cnt[2] = (uint16_t)(a_wihout_g_z * 1000);
+
+		cnt[3] = (uint16_t)(a_velocity_x * 1000);
+		cnt[4] = (uint16_t)(a_velocity_y * 1000);
+		cnt[5] = (uint16_t)(a_velocity_z * 1000);
+
+		cnt[6] = (uint16_t)(a_position_x * 1000);
+		cnt[7] = (uint16_t)(a_position_y * 1000);
+		cnt[8] = (uint16_t)(a_position_z * 1000);
+
+
+		size = sprintf(data, "a_wihout_g_x: %d \n\r", cnt[0]);
+		HAL_UART_Transmit(&huart2, data, size, 10);
+		size = sprintf(data, "a_wihout_g_y: %d \n\r", cnt[1]);
+		HAL_UART_Transmit(&huart2, data, size, 10);
+		size = sprintf(data, "a_wihout_g_z: %d \n\r", cnt[2]);
+		HAL_UART_Transmit(&huart2, data, size, 10);
+
+		size = sprintf(data, "a_velocity_x: %d \n\r", cnt[3]);
+		HAL_UART_Transmit(&huart2, data, size, 10);
+		size = sprintf(data, "a_velocity_y: %d \n\r", cnt[4]);
+		HAL_UART_Transmit(&huart2, data, size, 10);
+		size = sprintf(data, "a_velocity_z: %d \n\r", cnt[5]);
+		HAL_UART_Transmit(&huart2, data, size, 10);
+
+		size = sprintf(data, "a_position_x: %d \n\r", cnt[6]);
+		HAL_UART_Transmit(&huart2, data, size, 10);
+		size = sprintf(data, "a_position_y: %d \n\r", cnt[7]);
+		HAL_UART_Transmit(&huart2, data, size, 10);
+		size = sprintf(data, "a_position_z: %d \n\r", cnt[8]);
+		HAL_UART_Transmit(&huart2, data, size, 10);
+
+		size = sprintf(data, "\n\r", cnt[9]);
+		HAL_UART_Transmit(&huart2, data, size, 10);
+
 		osDelay(10);
 	}
 
-	/* USER CODE END Start_USART_Task */
+  /* USER CODE END Start_USART_Task */
 }
 
 /* USER CODE BEGIN Header_Start_IMU_Task */
@@ -204,8 +232,9 @@ void Start_USART_Task(void const *argument) {
 * @retval None
 */
 /* USER CODE END Header_Start_IMU_Task */
-void Start_IMU_Task(void const *argument) {
-	/* USER CODE BEGIN Start_IMU_Task */
+void Start_IMU_Task(void const * argument)
+{
+  /* USER CODE BEGIN Start_IMU_Task */
 
 	/* IMU task variables */
 	uint8_t mpu9250_correct_init_global = 0;
@@ -219,14 +248,14 @@ void Start_IMU_Task(void const *argument) {
 	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 	osDelay(100);
 
-	if (MPU9250_Init(&hi2c1, &mpu1, MPU9250_Device_1, MPU9250_Acce_2G,
-			MPU9250_Gyro_2000s) == MPU9250_Init_OK) {
+	if (MPU9250_Init(&hi2c1, &mpu1, MPU9250_Device_1, MPU9250_Acce_2G, MPU9250_Gyro_2000s) == MPU9250_Init_OK) {
 
-		//MPU9250_Set_Offsets(&hi2c1, &mpu1, 0,0,0, 0,0,0, 27.5,0.97,0.95, 1.07,1,1);
+		MPU9250_Set_Offsets(&hi2c1, &mpu1, 0,0,0, 0,0,0, -26.536,0.992,0.968, 1.04,1,1);
+
 
 		MPU9250_Calibration_Acce(&hi2c1, &mpu1);
 		MPU9250_Calibration_Gyro(&hi2c1, &mpu1);
-		MPU9250_Calibration_Mag(&hi2c1, &mpu1);
+		//MPU9250_Calibration_Mag(&hi2c1, &mpu1);
 
 		a_x_offset_global = mpu1.Accelerometer_X_offset, a_y_offset_global = mpu1.Accelerometer_Y_offset, a_z_offset_global = mpu1.Accelerometer_Z_offset;
 		g_x_offset_global = mpu1.Gyroscope_X_offset, g_y_offset_global = mpu1.Gyroscope_Y_offset, g_z_offset_global = mpu1.Gyroscope_Z_offset;
@@ -250,116 +279,62 @@ void Start_IMU_Task(void const *argument) {
 	osDelay(100);
 	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
-	/*
-	while(HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) != GPIO_PIN_RESET) {
-
-		osDelay(10);
-	}
-	*/
-
-	//MPU9250_Calculate_RPY(&hi2c1, &mpu1, dt);
-	//mpu1.Gyroscope_Roll  = mpu1.Accelerometer_Roll;
-	//mpu1.Gyroscope_Pitch = mpu1.Accelerometer_Pitch;
-	//mpu1.Gyroscope_Yaw   = mpu1.Magnetometer_Yaw;
-
-	/*
-	for(int i = 0; i < 1000; ++i) {
-
-		MPU9250_Calculate_RPY(&hi2c1, &mpu1, dt);
-		mpu1.Magnetometer_Yaw_offset += mpu1.Magnetometer_Yaw;
-	}
-	mpu1.Magnetometer_Yaw_offset = mpu1.Magnetometer_Yaw_offset / 1000;
-	*/
-
 	/* Infinite loop */
 	for (;;) {
+
 		if (mpu9250_correct_init_global == 1) {
 
 			/* Case 1: Time measurement */
 			I_Time_Start = I_Time_Stop;
 			I_Time_Stop = HAL_GetTick();
 
-			dt = (double) (I_Time_Stop - I_Time_Start) / 1000;
+			dt = (float) (I_Time_Stop - I_Time_Start) / 1000;
 
-			/* Case 2: RPY calculation */
-			MPU9250_Calculate_RPY(&hi2c1, &mpu1, dt);
+			/* Case 2: Update AHRS */
+			MPU9250_Update(&hi2c1, &mpu1, dt);
 
-			a_x_g_global = mpu1.Accelerometer_X_g, a_y_g_global = mpu1.Accelerometer_Y_g, a_z_g_global = mpu1.Accelerometer_Z_g;
-			g_x_dgs_global = mpu1.Gyroscope_X_dgs, g_y_dgs_global = mpu1.Gyroscope_Y_dgs, g_z_dgs_global = mpu1.Gyroscope_Z_dgs;
-			m_x_uT_global = mpu1.Magnetometer_X_uT, m_y_uT_global = mpu1.Magnetometer_Y_uT, m_z_uT_global = mpu1.Magnetometer_Z_uT;
+			a_g_x = mpu1.Accelerometer_vector_g.x,
+			a_g_y = mpu1.Accelerometer_vector_g.y,
+			a_g_z = mpu1.Accelerometer_vector_g.z;
 
-			//a_roll_global = mpu1.Accelerometer_Roll, a_pitch_global = mpu1.Accelerometer_Pitch;
-			//g_roll_global = mpu1.Gyroscope_Roll, g_pitch_global = mpu1.Gyroscope_Pitch, g_yaw_global = mpu1.Gyroscope_Yaw;
-			//m_yaw_global = mpu1.Magnetometer_Yaw;
+			a_g_offset_x = mpu1.Accelerometer_vector_g_offset.x,
+			a_g_offset_y = mpu1.Accelerometer_vector_g_offset.y,
+			a_g_offset_z = mpu1.Accelerometer_vector_g_offset.z;
 
-			/* Case 3: Filters using */
-			Complementary_filter(&mpu1, Filter_weight_RP_global, Filter_weight_Y_global, dt);
-			Kalman_filter(&mpu1,
-						  Kalman_filter_process_variance_RP, Kalman_filter_measure_variance_RP,
-						  Kalman_filter_process_variance_Y, Kalman_filter_measure_variance_Y,
-						  dt);
-			Madgwick_filter(&mpu1, Madgwick_filter_beta, dt);
-			//Mahony_filter(&mpu1, dt);
+			a_wihout_g_x = mpu1.Accelerometer_vector_without_g.x,
+			a_wihout_g_y = mpu1.Accelerometer_vector_without_g.y,
+			a_wihout_g_z = mpu1.Accelerometer_vector_without_g.z;
+
+			a_velocity_x = mpu1.Accelerometer_vector_velocity.x,
+			a_velocity_y = mpu1.Accelerometer_vector_velocity.y,
+			a_velocity_z = mpu1.Accelerometer_vector_velocity.z;
+
+			a_position_x = mpu1.Accelerometer_vector_position.x,
+			a_position_y = mpu1.Accelerometer_vector_position.y,
+			a_position_z = mpu1.Accelerometer_vector_position.z;
 
 			/* Filters data */
-			//Complementary_q_w = mpu1.Gyroscope_quaternion.w;
-			//Complementary_q_x = mpu1.Gyroscope_quaternion.x;
-			//Complementary_q_y = mpu1.Gyroscope_quaternion.y;
-			//Complementary_q_z = mpu1.Gyroscope_quaternion.z;
-
-			//Complementary_q_w = mpu1.Accelerometer_quaternion.w;
-			//Complementary_q_x = mpu1.Accelerometer_quaternion.x;
-			//Complementary_q_y = mpu1.Accelerometer_quaternion.y;
-			//Complementary_q_z = mpu1.Accelerometer_quaternion.z;
-
-			//Complementary_q_w = mpu1.Magnetometer_quaternion.w;
-			//Complementary_q_x = mpu1.Magnetometer_quaternion.x;
-			//Complementary_q_y = mpu1.Magnetometer_quaternion.y;
-			//Complementary_q_z = mpu1.Magnetometer_quaternion.z;
-
-			//Complementary_q_w = mpu1.Complementary_quaternion.w;
-			//Complementary_q_x = mpu1.Complementary_quaternion.x;
-			//Complementary_q_y = mpu1.Complementary_quaternion.y;
-			//Complementary_q_z = mpu1.Complementary_quaternion.z;
-
-			//Kalman_q_w = mpu1.Kalman_quaternion.w;
-			//Kalman_q_x = mpu1.Kalman_quaternion.x;
-			//Kalman_q_y = mpu1.Kalman_quaternion.y;
-			//Kalman_q_z = mpu1.Kalman_quaternion.z;
-
-			//Kalman_q_w = mpu1.Accelerometer_quaternion.w;
-			//Kalman_q_x = mpu1.Accelerometer_quaternion.x;
-			//Kalman_q_y = mpu1.Accelerometer_quaternion.y;
-			//Kalman_q_z = mpu1.Accelerometer_quaternion.z;
-
-			Kalman_q_w = mpu1.Accelerometer_X_position;
-			Kalman_q_x = mpu1.Accelerometer_Y_position;
-			Kalman_q_y = mpu1.Accelerometer_Z_position;
-			Kalman_q_z = 0;
-
-			//Madgwick_q_w = mpu1.Madgwick_quaternion.w;
-			//Madgwick_q_x = mpu1.Madgwick_quaternion.x;
-			//Madgwick_q_y = mpu1.Madgwick_quaternion.y;
-			//Madgwick_q_z = mpu1.Madgwick_quaternion.z;
-
-			//Madgwick_q_w = mpu1.Magnetometer_quaternion.w;
-			//Madgwick_q_x = mpu1.Magnetometer_quaternion.x;
-			//Madgwick_q_y = mpu1.Magnetometer_quaternion.y;
-			//Madgwick_q_z = mpu1.Magnetometer_quaternion.z;
-
-			Madgwick_q_w = mpu1.Accelerometer_X_velocity;
-			Madgwick_q_x = mpu1.Accelerometer_Y_velocity;
-			Madgwick_q_y = mpu1.Accelerometer_Z_velocity;
-			Madgwick_q_z = 0;
+			Madgwick_q_w = mpu1.Madgwick_quaternion.w;
+			Madgwick_q_x = mpu1.Madgwick_quaternion.x;
+			Madgwick_q_y = mpu1.Madgwick_quaternion.y;
+			Madgwick_q_z = mpu1.Madgwick_quaternion.z;
 		}
 
 		osDelay(10);
 	}
-	/* USER CODE END Start_IMU_Task */
+  /* USER CODE END Start_IMU_Task */
 }
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+
+/*
+int _write(int file , char *ptr , int len) {
+
+	HAL_UART_Transmit(&huart2 ,(uint8_t *)ptr ,len ,1000) ;
+	return len;
+}
+*/
      
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 

@@ -12,10 +12,10 @@
 
 struct quaternion {
 
-	double w;
-	double x;
-	double y;
-	double z;
+	float w;
+	float x;
+	float y;
+	float z;
 };
 
 struct euler {
@@ -27,16 +27,23 @@ struct euler {
 
 struct rot_matrix {
 
-	double m11, m12, m13;
-	double m21, m22, m23;
-	double m31, m32, m33;
+	float m11, m12, m13;
+	float m21, m22, m23;
+	float m31, m32, m33;
+};
+
+struct vector {
+
+	float x;
+	float y;
+	float z;
 };
 
 void quaternion_init(struct quaternion *q);
 
 void euler_init(struct euler *e);
 
-struct quaternion quaternion_tensor_product(struct quaternion *q1, struct quaternion *q2);
+struct quaternion quaternion_tensor_product(struct quaternion q1, struct quaternion q2);
 
 void quaternion_normalise(struct quaternion *q);
 
